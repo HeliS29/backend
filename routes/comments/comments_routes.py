@@ -55,11 +55,7 @@ def update_new_comment_in_db(db: Session, user_id: int,id: int, comment_text: st
     return db_comment
 
 
-# @router.post("/comments/", response_model=CommentResponse)
-# def create_comment(comment: CommentCreate, db: Session = Depends(get_db)):
-#     return create_comment_in_db(db=db,  user_id=comment.user_id,
-#         report_version_id=comment.report_version_id,
-#         comment_text=comment.comment_text)  # Call the renamed function
+
 
 
 @router.post("/comments/", response_model=CommentResponse)
@@ -81,6 +77,24 @@ def get_comments(current_user:UserDependency,user_id: int, db: Session = Depends
     return comments
 
 
+@router.put("/new/comments/{user_id}/{id}", response_model=CommentResponse)
+def update_comment(current_user:UserDependency,
+    comment_update: CommentUpdate,
+    user_id: int,
+    id: int,
+    db: Session = Depends(get_db)
+):
+    print(f"Querying for user_id={user_id}, comment_id={id}")
+    updated_comment = update_new_comment_in_db(
+        db=db,
+        user_id=user_id,
+        id=id,
+        comment_text=comment_update.comment_text
+    )
+    if not updated_comment:
+        raise HTTPException(status_code=404, detail="Comment not found")
+    return updated_comment
+
 
 # @router.put("/comments/{user_id}/{report_version_id}", response_model=CommentResponse)
 # def update_comment(
@@ -99,23 +113,13 @@ def get_comments(current_user:UserDependency,user_id: int, db: Session = Depends
 #         raise HTTPException(status_code=404, detail="Comment not found")
 #     return updated_comment
 
-@router.put("/new/comments/{user_id}/{id}", response_model=CommentResponse)
-def update_comment(current_user:UserDependency,
-    comment_update: CommentUpdate,
-    user_id: int,
-    id: int,
-    db: Session = Depends(get_db)
-):
-    print(f"Querying for user_id={user_id}, comment_id={id}")
-    updated_comment = update_new_comment_in_db(
-        db=db,
-        user_id=user_id,
-        id=id,
-        comment_text=comment_update.comment_text
-    )
-    if not updated_comment:
-        raise HTTPException(status_code=404, detail="Comment not found")
-    return updated_comment
+
+# @router.post("/comments/", response_model=CommentResponse)
+# def create_comment(comment: CommentCreate, db: Session = Depends(get_db)):
+#     return create_comment_in_db(db=db,  user_id=comment.user_id,
+#         report_version_id=comment.report_version_id,
+#         comment_text=comment.comment_text)  # Call the renamed function
+
 # @router.put("/comments/{user_id}/{report_version_id}", response_model=CommentResponse)
 # def update_comment(
 #     comment_update: CommentUpdate,

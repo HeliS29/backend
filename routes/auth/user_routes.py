@@ -9,27 +9,7 @@ from models.profile import Manager
 
 router = APIRouter()
 
-# @router.post("/register", response_model=UserResponse)
-# def register_user(user: UserCreate, db: Session = Depends(get_db)):
-#     existing_user = db.query(User).filter(User.email == user.email).first()
-#     if existing_user:
-#         raise HTTPException(status_code=400, detail="Email already registered")
-#     new_user=create_user(db, user.name, user.email, user.password)
-#     employee_role = db.query(UserRole).filter(UserRole.role == 'employee').first()
-#     if not employee_role:
-#         # Create 'employee' role if it doesn't exist
-#         employee_role = UserRole(role="employee")
-#         db.add(employee_role)
-#         db.commit()
-#         db.refresh(employee_role)
 
-#     # Assign the role ID to the user
-#     new_user.role_id = employee_role.id
-#     db.commit()
-#     db.refresh(new_user)
-
-
-#     return new_user
 @router.post("/register", response_model=UserResponse)
 def register_user(user: UserCreate, db: Session = Depends(get_db)):
     # Check if the email is already registered
@@ -80,3 +60,26 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
             db.refresh(new_manager)
 
     return new_user
+
+
+# @router.post("/register", response_model=UserResponse)
+# def register_user(user: UserCreate, db: Session = Depends(get_db)):
+#     existing_user = db.query(User).filter(User.email == user.email).first()
+#     if existing_user:
+#         raise HTTPException(status_code=400, detail="Email already registered")
+#     new_user=create_user(db, user.name, user.email, user.password)
+#     employee_role = db.query(UserRole).filter(UserRole.role == 'employee').first()
+#     if not employee_role:
+#         # Create 'employee' role if it doesn't exist
+#         employee_role = UserRole(role="employee")
+#         db.add(employee_role)
+#         db.commit()
+#         db.refresh(employee_role)
+
+#     # Assign the role ID to the user
+#     new_user.role_id = employee_role.id
+#     db.commit()
+#     db.refresh(new_user)
+
+
+#     return new_user

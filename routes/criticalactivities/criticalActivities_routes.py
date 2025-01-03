@@ -44,19 +44,6 @@ def create_critical_activity(current_user:UserDependency,
 
     return new_activities
 
-# @router.post("/critical_activities/", response_model=List[CriticalActivityResponse])
-# def create_critical_activity(
-#     critical_activity: List[CriticalActivityCreate], db: Session = Depends(get_db)
-# ):
-#     db_critical_activity = [CriticalActivities(**area.dict()) for area in critical_activity]
-#     db.add_all(db_critical_activity)
-#     db.commit()
-#     return db_critical_activity
-    # new_activity = CriticalActivities(**critical_activity.dict())
-    # db.add(new_activity)
-    # db.commit()
-    # db.refresh(new_activity)
-    # return new_activity
 
 @router.get("/critical_activities/", response_model=List[CriticalActivityResponse])
 def get_all_critical_activities(current_user:UserDependency,db: Session = Depends(get_db)):
@@ -108,46 +95,6 @@ def update_critical_activities(
     return updated_activities
 
 
-
-
-from typing import Dict, Any
-from sqlalchemy.orm import joinedload
-
-# @router.get("/user_details/{user_id}", response_model=Dict[str, Any])
-# def get_user_details(user_id: int, db: Session = Depends(get_db)):
-#     # Fetch critical activities based on user_id
-#     critical_activities = (
-#         db.query(CriticalActivities)
-#         .filter(CriticalActivities.user_id == user_id)
-#         .all()
-#     )
-
-#     if not critical_activities:
-#         return {"message": f"This user has no critical activities."}
-
-#     result = []
-#     for ca in critical_activities:
-#         # Fetch core focus area details using core_focus_area_id
-#         core_focus_area = (
-#             db.query(CoreFocusArea)
-#             .filter(CoreFocusArea.id == ca.core_focus_area_id)
-#             .first()
-#         )
-
-#         if core_focus_area:
-#             result.append({
-#                 "core_focus_area": core_focus_area.area,
-#                 "time_spent": core_focus_area.time_spent,
-#                 "critical_activity": {
-#                     "area": ca.area,
-#                     "importance": ca.importance
-#                 }
-#             })
-
-#     return {"user_id": user_id, "details": result}
-
-
-
 @router.get("/user_details/{user_id}", response_model=Dict[str, Any])
 def get_user_details(current_user:UserDependency,user_id: int, db: Session = Depends(get_db)):
     # Fetch critical activities based on user_id
@@ -188,3 +135,57 @@ def get_user_details(current_user:UserDependency,user_id: int, db: Session = Dep
             })
 
     return {"user_id": user_id, "details": result}
+
+
+
+
+
+# @router.post("/critical_activities/", response_model=List[CriticalActivityResponse])
+# def create_critical_activity(
+#     critical_activity: List[CriticalActivityCreate], db: Session = Depends(get_db)
+# ):
+#     db_critical_activity = [CriticalActivities(**area.dict()) for area in critical_activity]
+#     db.add_all(db_critical_activity)
+#     db.commit()
+#     return db_critical_activity
+    # new_activity = CriticalActivities(**critical_activity.dict())
+    # db.add(new_activity)
+    # db.commit()
+    # db.refresh(new_activity)
+    # return new_activity
+
+# @router.get("/user_details/{user_id}", response_model=Dict[str, Any])
+# def get_user_details(user_id: int, db: Session = Depends(get_db)):
+#     # Fetch critical activities based on user_id
+#     critical_activities = (
+#         db.query(CriticalActivities)
+#         .filter(CriticalActivities.user_id == user_id)
+#         .all()
+#     )
+
+#     if not critical_activities:
+#         return {"message": f"This user has no critical activities."}
+
+#     result = []
+#     for ca in critical_activities:
+#         # Fetch core focus area details using core_focus_area_id
+#         core_focus_area = (
+#             db.query(CoreFocusArea)
+#             .filter(CoreFocusArea.id == ca.core_focus_area_id)
+#             .first()
+#         )
+
+#         if core_focus_area:
+#             result.append({
+#                 "core_focus_area": core_focus_area.area,
+#                 "time_spent": core_focus_area.time_spent,
+#                 "critical_activity": {
+#                     "area": ca.area,
+#                     "importance": ca.importance
+#                 }
+#             })
+
+#     return {"user_id": user_id, "details": result}
+
+
+

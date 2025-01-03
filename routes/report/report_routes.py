@@ -17,127 +17,7 @@ router = APIRouter()
 
 
 UserDependency = Annotated[dict, Depends(get_current_user)]
-# @router.post("/reports", response_model=ReportResponse)
-# def create_report(report: ReportCreate, db: Session = Depends(get_db)):
-#     new_report = Report(user_id=report.user_id, manager_id=report.manager_id)
-#     db.add(new_report)
-#     db.commit()
-#     db.refresh(new_report)
-#     return new_report
 
-# @router.post("/reports", response_model=ReportResponse)
-# def create_report(report: ReportCreate, db: Session = Depends(get_db)):
-#     # Fetch the existing report for the user if it exists
-#     existing_report = db.query(Report).filter(Report.user_id == report.user_id).first()
-
-#     if existing_report:
-#         # Increment the version number for the existing report
-#         last_version = (
-#             db.query(ReportVersion)
-#             .filter(ReportVersion.report_id == existing_report.id)
-#             .order_by(ReportVersion.version_number.desc())
-#             .first()
-#         )
-#         new_version_number = (last_version.version_number + 1) if last_version else 1
-
-#         # Create a new version
-#         new_version = ReportVersion(
-#             report_id=existing_report.id,
-#             version_number=new_version_number,
-#             pdf_path=f"report_{existing_report.id}_v{new_version_number}.pdf"
-#         )
-#         db.add(new_version)
-#         db.commit()
-#         db.refresh(new_version)
-
-#         # Update the report's current version
-#         existing_report.current_version_id = new_version.id
-#         db.commit()
-#     else:
-#         # Create a new report if none exists
-#         new_report = Report(
-#             user_id=report.user_id,
-#             manager_id=report.manager_id,
-#         )
-#         db.add(new_report)
-#         db.commit()
-#         db.refresh(new_report)
-        
-
-#         # Generate the first version
-#         new_version = ReportVersion(
-#             report_id=new_report.id,
-#             version_number=1,
-#             pdf_path=f"report_{new_report.id}_v1.pdf"
-#         )
-#         db.add(new_version)
-#         db.commit()
-#         db.refresh(new_version)
-
-#         # Update the current version ID in the report
-#         new_report.current_version_id = new_version.id
-#         db.commit()
-#         existing_report = new_report  # For consistency in variable naming
-
-#     # Prepare content for the new version
-#     role_review = db.query(RoleReview).filter(RoleReview.user_id == report.user_id).first()
-#     core_focus_areas = db.query(CoreFocusArea).filter(CoreFocusArea.user_id == report.user_id).all()
-#     critical_activities = db.query(CriticalActivities).filter(CriticalActivities.user_id == report.user_id).all()
-
-#     report_content_data = {}
-
-#     # Include RoleReview data
-#     if role_review:
-#         report_content_data['role_review'] = {
-#             'name': role_review.name,
-#             'purpose': role_review.purpose,
-#             'title': role_review.title,
-#             'organization': role_review.organization,
-#             'date': role_review.date.isoformat(),
-#             'prepared_by': role_review.prepared_by,
-#             'job_summary': role_review.job_summary
-#         }
-
-#     # Include CoreFocusArea data with nested CriticalActivities
-#     if core_focus_areas:
-#         focus_area_map = {focus_area.id: focus_area for focus_area in core_focus_areas}
-#         critical_activities_map = {}
-        
-#         for activity in critical_activities:
-#             critical_activities_map.setdefault(activity.core_focus_area_id, []).append({
-#                 'area': activity.area,
-#                 'importance': activity.importance
-#             })
-
-#         report_content_data['core_focus_areas'] = [
-#             {
-#                 'area': focus_area.area,
-#                 'time_spent': focus_area.time_spent,
-#                 'importance': focus_area.importance,
-#                 'critical_activities': critical_activities_map.get(focus_area.id, [])
-#             }
-#             for focus_area in core_focus_areas
-#         ]
-
-#     # Add new content for the version
-#     report_content = ReportContent(
-#         report_version_id=new_version.id,
-#         content=json.dumps(report_content_data)
-#     )
-#     db.add(report_content)
-#     db.commit()
-#     db.refresh(report_content)
-#     message = f"Your report has been updated to version {new_version_number}."
-#     notification = Notification(
-#             user_id=report.user_id,
-#             message=message,
-#             is_read=False,
-#             created_at=datetime.now()
-#         )
-#     db.add(notification)
-#     db.commit()
-
-#     return existing_report
 
 @router.get("/notifications/", response_model=List[NotificationResponse])
 def get_notifications(current_user:UserDependency, db: Session = Depends(get_db)):
@@ -209,8 +89,6 @@ def get_notifications_by_manager(current_user:UserDependency, db: Session = Depe
 #     return notifications
 
 
-
-
 @router.put("/reports/{report_id}/versions", response_model=ReportVersionResponse)
 def create_report_version(current_user:UserDependency,report_id: int, db: Session = Depends(get_db)):
     # Get the last version of the report
@@ -244,17 +122,7 @@ def get_manager_by_user_id(current_user:UserDependency,user_id: int, db: Session
     if not user or not user.manager_id:
         raise HTTPException(status_code=404, detail="Manager not found")
     return ManagerResponse(manager_id=user.manager_id)
-# @router.put("/reports/{user_id}", response_model=ReportResponse)
-# def update_report(user_id: int, report: ReportUpdate, db: Session = Depends(get_db)):
-#     existing_report = db.query(Report).filter(Report.user_id == user_id).first()
-#     if not existing_report:
-#         raise HTTPException(status_code=404, detail="Report not found")
 
-    
-#     existing_report.manager_id = report.manager_id
-#     db.commit()
-#     db.refresh(existing_report)
-#     return existing_report
 
 @router.get("/reports/{user_id}/versions/{version_number}", response_model=ReportContentResponse)
 def get_report_content_by_version(current_user:UserDependency,

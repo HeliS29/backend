@@ -20,16 +20,6 @@ UserDependency = Annotated[dict, Depends(get_current_user)]
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)
 
-# @router.post("/login", response_model=TokenResponse)
-# def login(user:UserLogin, db: Session = Depends(get_db)):
-#     email=user.email
-#     password=user.password
-#     role=user.role
-#     user = authenticate_user(db, email, password)
-#     if not user:
-#         raise HTTPException(status_code=400, detail="Invalid credentials")
-#     token = create_jwt_token({"user_id": user.id, "role": role})
-#     return {"user_id": user.id, "role": role, "token": token}
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -276,13 +266,3 @@ def logout(token: str, db: Session = Depends(get_db)):
     blacklisted_tokens.add(token)
     return {"msg": "Logged out successfully"}
 
-# @router.post("/token")
-# async def login(user_id: int, role: str):
-#     expiration = datetime.utcnow() + timedelta(minutes=settings.JWT_EXPIRATION_MINUTES)
-#     payload = {
-#         "user_id": user_id,
-#         "role": role,
-#         "expires_at": expiration
-#     }
-#     token = jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
-#     return TokenResponse(user_id=user_id, role=role, token=token, expires_at=expiration)
