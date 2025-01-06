@@ -28,3 +28,9 @@ class CommentResponse(BaseModel):
 
 class CommentUpdate(BaseModel):
     comment_text: str
+    @root_validator(pre=True)
+    def check_comment_text_not_empty(cls, values):
+        comment_text = values.get("comment_text")
+        if not comment_text or comment_text.strip() == "":
+            raise ValueError("Comment content cannot be empty")
+        return values

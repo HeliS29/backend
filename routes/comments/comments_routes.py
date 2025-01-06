@@ -94,6 +94,11 @@ def update_comment(current_user:UserDependency,
     db: Session = Depends(get_db)
 ):
     print(f"Querying for user_id={user_id}, comment_id={id}")
+    print(f"Received comment: {comment_update}")
+    if not comment_update.comment_text or comment_update.comment_text.strip() == "":
+        print("hello")
+        raise HTTPException(status_code=400, detail="Comment content cannot be empty")
+
     updated_comment = update_new_comment_in_db(
         db=db,
         user_id=user_id,
