@@ -6,7 +6,7 @@ class CommentCreate(BaseModel):
     
     user_id: int
     report_version_id: int
-    comment_text: str
+    comment_text: Optional[str]=None
 
 
 class CommentResponse(BaseModel):

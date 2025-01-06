@@ -60,6 +60,10 @@ def update_new_comment_in_db(db: Session, user_id: int,id: int, comment_text: st
 
 @router.post("/comments/", response_model=CommentResponse)
 def create_comment(current_user:UserDependency,comment: CommentCreate, db: Session = Depends(get_db)):
+    print(comment)
+    if not comment.comment_text or not comment.comment_text.strip():
+        print("hello")
+        raise HTTPException(status_code=400, detail="Comment content cannot be empty")
     return create_comment_in_db(
         db=db,
         user_id=comment.user_id,  # Use the current user's ID

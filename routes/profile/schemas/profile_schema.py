@@ -56,3 +56,20 @@ class OrganizationResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class ManagerCreate(BaseModel):
+    name: str
+    email: EmailStr
+    dept: Optional[str] = None
+
+    class Config:
+        orm_mode = True
+
+
+
+class OrganizationCreate(BaseModel):
+    name: str
+
+    class Config:
+        orm_mode = True
