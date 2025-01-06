@@ -26,7 +26,7 @@ from fastapi.staticfiles import StaticFiles
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000","http://192.168.3.19:49340"], 
+    allow_origins=["http://192.168.3.19:49340"], 
      # Allow all origins; modify as needed
     allow_credentials=True,
     allow_methods=["*"],
