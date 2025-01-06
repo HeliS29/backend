@@ -14,6 +14,7 @@ router = APIRouter()
 
 UserDependency = Annotated[dict, Depends(get_current_user)]
 def create_comment_in_db(db: Session, user_id: int, report_version_id: int, comment_text: str):
+    
     db_comment = Comment(
         user_id=user_id,
         report_version_id=report_version_id,
@@ -61,9 +62,13 @@ def update_new_comment_in_db(db: Session, user_id: int,id: int, comment_text: st
 @router.post("/comments/", response_model=CommentResponse)
 def create_comment(current_user:UserDependency,comment: CommentCreate, db: Session = Depends(get_db)):
     print(comment)
-    if not comment.comment_text or not comment.comment_text.strip():
-        print("hello")
+    print(f"Received comment: {comment}")
+    if not comment.comment_text or comment.comment_text.strip() == "":
         raise HTTPException(status_code=400, detail="Comment content cannot be empty")
+
+    # if not comment.comment_text or comment.comment_text.strip() == "":
+    #     print("hello")
+    #     raise HTTPException(status_code=400, detail="Comment content cannot be empty")
     return create_comment_in_db(
         db=db,
         user_id=comment.user_id,  # Use the current user's ID
