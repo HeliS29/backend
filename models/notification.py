@@ -4,17 +4,17 @@ from datetime import datetime
 from database import Base
 from models.users import User
 
-class Notification(Base):
-    __tablename__ = 'notifications'
+# class Notification(Base):
+#     __tablename__ = 'notifications'
 
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)  
-    message = Column(String(100), nullable=False)
-    # is_read = Column(Boolean, default=False)  
-    is_read_by_user = Column(Boolean, default=False)  # Tracks if the user has read the notification
-    is_read_by_manager = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=func.now()) 
-    manager_id = Column(Integer, ForeignKey("managers.id"), nullable=True)
+#     id = Column(Integer, primary_key=True, index=True)
+#     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)  
+#     message = Column(String(100), nullable=False)
+#     # is_read = Column(Boolean, default=False)  
+#     is_read_by_user = Column(Boolean, default=False)  # Tracks if the user has read the notification
+#     is_read_by_manager = Column(Boolean, default=False)
+#     created_at = Column(DateTime, default=func.now()) 
+#     manager_id = Column(Integer, ForeignKey("managers.id"), nullable=True)
      
 
 

@@ -6,7 +6,6 @@ from sqlalchemy.orm import Session
 from datetime import datetime
 from database import get_db
 from models.emailQueue import EmailQueue
-from models.notification import Notification
 from models.users import User
 from models.profile import Manager
 from models.report import ReportVersion,Report

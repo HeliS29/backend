@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models.users import User
 import os
-from models.notification import New_notification, Notification
+from models.notification import New_notification
 from models.roleReview import RoleReview,CoreFocusArea,CriticalActivities
 from routes.report.schema.report_schema import ReportResponse,ReportContentResponse,ReportCreate,ReportVersionResponse,ManagerResponse,NotificationResponse
 from models.report import Report,ReportVersion,ReportContent
@@ -364,7 +364,7 @@ def create_report(current_user:UserDependency,user_id: int = Form(...),manager_i
             }
             for focus_area in core_focus_areas
         ]
-    print(report_content_data)
+    print("report_content_data",report_content_data)
 
     # Add new content for the version
     report_content = ReportContent(
@@ -439,8 +439,11 @@ def create_report_notification(report, role, is_new_version,db):
     #     created_at=datetime.now(),
     #     manager_id=report.manager_id if report.manager_id else None
     # )
-    db.add(notification)
-    db.commit()
+    # db.add(notification)
+    # db.commit()
+
+
+
 
 @router.get("/reports/{user_id}/versions", response_model=List[ReportVersionResponse])
 def get_report_versions(current_user:UserDependency,
