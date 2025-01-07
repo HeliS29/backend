@@ -9,4 +9,4 @@ class UserResponse(BaseModel):
     organization_id: Optional[int]
 
     class Config:
-        orm_mode = True
+        from_attributes = True
