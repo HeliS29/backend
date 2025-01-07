@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta
 
 from fastapi import Depends
-import jwt
-from jose import JWT
+# import jwt
+from jose import jwt
 
 from config import settings
 from fastapi.security import OAuth2PasswordRequestForm
@@ -13,7 +13,7 @@ def create_jwt_token(data: dict):
     expiration = datetime.now() + timedelta(minutes=settings.JWT_EXPIRATION_MINUTES)
     data.update({"exp": expiration})
    
-    token = JWT.encode(data, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
+    token = jwt.encode(data, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
     return token
 
 def verify_jwt_token(token: str):
