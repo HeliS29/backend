@@ -64,7 +64,7 @@ class ManagerCreate(BaseModel):
     dept: Optional[str] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 
@@ -72,4 +72,4 @@ class OrganizationCreate(BaseModel):
     name: str
 
     class Config:
-        orm_mode = True
+        from_attributes = True

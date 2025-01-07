@@ -238,15 +238,16 @@ def get_report_content_by_version(current_user:UserDependency,
 
 
 UPLOAD_FOLDER = "./uploads"
-from dotenv import load_dotenv
-import os
-load_dotenv()
-S3_BUCKET_NAME = os.getenv('S3_BUCKET_NAME')
-S3_REGION =os.getenv('S3_REGION') # change to your region
-S3_ACCESS_KEY = os.getenv('S3_ACCESS_KEY')
-S3_SECRET_KEY = os.getenv('S3_SECRET_KEY')
+# from dotenv import load_dotenv
+# S3_BUCKET_NAME = os.getenv('S3_BUCKET_NAME')
+# S3_REGION =os.getenv('S3_REGION') # change to your region
+# S3_ACCESS_KEY = os.getenv('S3_ACCESS_KEY')
+# S3_SECRET_KEY = os.getenv('S3_SECRET_KEY')
 
-
+S3_BUCKET_NAME = "activate-pdfstorage"
+S3_REGION = "ap-southeast-2"  # change to your region
+S3_ACCESS_KEY = "AKIAU6GDWWBFXN3GGZOV"
+S3_SECRET_KEY="/c2cN1w7xeBYxgHbUNH1/8FPpjVGSYTbMdyhBmnW"
 
 
 # Initialize boto3 S3 client

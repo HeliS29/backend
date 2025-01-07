@@ -13,7 +13,7 @@ class RoleReviewCreate(BaseModel):
     job_summary: str
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class RoleReviewUpdate(BaseModel):
@@ -26,7 +26,7 @@ class RoleReviewUpdate(BaseModel):
     job_summary: str = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 
@@ -44,7 +44,7 @@ class RoleReviewResponse(BaseModel):
     updated_at: datetime 
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 
