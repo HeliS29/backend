@@ -1,7 +1,8 @@
 from datetime import datetime, timedelta
 
 from fastapi import Depends
-import jwt
+import pyjwt as jwt
+
 from config import settings
 from fastapi.security import OAuth2PasswordRequestForm
 from typing import Annotated
