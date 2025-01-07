@@ -1,0 +1,42 @@
+# Python-related
+*.pyc
+*.pyo
+__pycache__
+*.pyd
+*.egg
+*.eggs
+dist/
+build/
+eggs/
+*.egg-info/
+*.log
+
+# Virtual environment
+venv/
+.env/
+.env.*
+
+# IDE/editor specific
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# FastAPI specific
+instance/
+
+# pytest
+.cache/
+
+# Docker
+*.docker
+docker-compose.override.yml
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# MacOS
+.DS_Store
+
+# Windows
+Thumbs.db
