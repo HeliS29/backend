@@ -13,7 +13,7 @@ def create_jwt_token(data: dict):
     # print(settings.JWT_SECRET)
     # print(data)
     # print(settings.JWT_ALGORITHM)
-    token = jwt.encode(data, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
+    token = jwt.JWT.encode(data, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
     return token
 
 def verify_jwt_token(token: str):
