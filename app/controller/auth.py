@@ -12,18 +12,18 @@ OAuth2Form = Annotated[OAuth2PasswordRequestForm, Depends()]
 def create_jwt_token(data: dict):
     expiration = datetime.now() + timedelta(minutes=settings.JWT_EXPIRATION_MINUTES)
     data.update({"exp": expiration})
-   
+    print(settings.JWT_SECRET)   
     token = jose_jwt.encode(data, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
     return token
 
 def verify_jwt_token(token: str):
     try:
-        payload = jose_jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
+        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
         print(payload)
         return payload
-    except jose_jwt.ExpiredSignatureError:
+    except jwt.ExpiredSignatureError:
         return None
-    except jose_jwt.InvalidTokenError:
+    except jwt.InvalidTokenError:
         return None
 
 
