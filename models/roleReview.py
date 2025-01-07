@@ -7,7 +7,7 @@ from database import Base
 class RoleReview(Base):
     __tablename__ = 'role_review'
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id",ondelete="CASCADE"), nullable=False)
     purpose = Column(String(100), nullable=False)
     name = Column(String(100), nullable=False)
     title = Column(String(100), nullable=False)
@@ -23,7 +23,7 @@ class CoreFocusArea(Base):
     __tablename__ = 'core_focus_areas'
 
     id = Column(Integer, Sequence('core_focus_area_id_seq'), primary_key=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id",ondelete="CASCADE"), nullable=False)
     area = Column(String(100), nullable=False)
     time_spent = Column(Float, nullable=False)
     importance = Column(Float, nullable=False)
@@ -35,8 +35,8 @@ class CriticalActivities(Base):
     __tablename__ = 'critical_activities'
 
     id = Column(Integer, Sequence('core_focus_area_id_seq'), primary_key=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    core_focus_area_id = Column(Integer, ForeignKey("core_focus_areas.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id",ondelete="CASCADE"), nullable=False)
+    core_focus_area_id = Column(Integer, ForeignKey("core_focus_areas.id",ondelete="CASCADE"), nullable=False)
     area = Column(String(100), nullable=False)
     importance = Column(Float, nullable=False)
 
