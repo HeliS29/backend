@@ -270,7 +270,7 @@ def create_report(current_user:UserDependency,user_id: int = Form(...),manager_i
 
     # Upload the file to S3
     try:
-        s3_client.upload_fileobj(file.file, S3_BUCKET_NAME, pdf_filename, ExtraArgs={'ACL': 'public-read'})
+        s3_client.upload_fileobj(file.file, S3_BUCKET_NAME, pdf_filename)
         pdf_url = f"https://{S3_BUCKET_NAME}.s3.{S3_REGION}.amazonaws.com/{pdf_filename}"
     except NoCredentialsError:
         raise HTTPException(status_code=500, detail="AWS credentials not available.")
