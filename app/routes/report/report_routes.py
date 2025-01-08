@@ -484,6 +484,16 @@ def create_report_notification(report, role, is_new_version,db):
             message = f"Manager created {user.name}'s report successfully."
         else:  # If the user created the report
             message = f"{user.name}'s report has been created successfully."
+        notification = New_notification(
+            user_id=report.user_id,
+            message=message,
+            is_read=False,
+            created_at=datetime.now(),
+        )
+    db.add(notification)
+    db.commit()
+
+    return notification
 
     # Create the notification
     
