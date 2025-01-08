@@ -237,7 +237,7 @@ def get_report_content_by_version(current_user:UserDependency,
 #     return existing_report
 
 
-UPLOAD_FOLDER = "./uploads"
+# UPLOAD_FOLDER = "./uploads"
 # from dotenv import load_dotenv
 # S3_BUCKET_NAME = os.getenv('S3_BUCKET_NAME')
 # S3_REGION =os.getenv('S3_REGION') # change to your region
@@ -259,7 +259,7 @@ s3_client = boto3.client('s3',
 @router.post("/reports", response_model=ReportResponse)
 def create_report(current_user:UserDependency,user_id: int = Form(...),manager_id: int = Form(...), role: str = Form(...), file: UploadFile = File(...), db: Session = Depends(get_db)):
     # Ensure upload directory exists
-    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+    # os.makedirs(UPLOAD_FOLDER, exist_ok=True)
     if role not in ["employee", "manager"]:
         raise HTTPException(status_code=400, detail="Invalid role. It must be either 'user' or 'manager'.")
 
@@ -276,9 +276,9 @@ def create_report(current_user:UserDependency,user_id: int = Form(...),manager_i
         raise HTTPException(status_code=500, detail="AWS credentials not available.")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    pdf_path = os.path.join(UPLOAD_FOLDER, pdf_filename)
-    with open(pdf_path, "wb") as f:
-        f.write(file.file.read())
+    # pdf_path = os.path.join(UPLOAD_FOLDER, pdf_filename)
+    # with open(pdf_path, "wb") as f:
+    #     f.write(file.file.read())
     print(f"File uploaded to: {pdf_url}")
 
     # Fetch the existing report for the user if it exists
@@ -314,7 +314,7 @@ def create_report(current_user:UserDependency,user_id: int = Form(...),manager_i
         new_version = ReportVersion(
             report_id=existing_report.id,
             version_number=new_version_number,
-            pdf_path=pdf_path,
+            pdf_path=pdf_url,
             # manager_comments=comment  # Use the stored path
         )
         db.add(new_version)
@@ -330,7 +330,7 @@ def create_report(current_user:UserDependency,user_id: int = Form(...),manager_i
         new_report = Report(
             user_id=user_id,
             manager_id=manager_id,
-            pdf_path=pdf_path,
+            pdf_path=pdf_url,
             role=role,
             # manager_comments=comment
         )
@@ -342,7 +342,7 @@ def create_report(current_user:UserDependency,user_id: int = Form(...),manager_i
         new_version = ReportVersion(
             report_id=new_report.id,
             version_number=1,
-            pdf_path=pdf_path ,
+            pdf_path=pdf_url ,
               # Use the stored path
         )
         db.add(new_version)
