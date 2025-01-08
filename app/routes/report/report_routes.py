@@ -248,7 +248,32 @@ S3_BUCKET_NAME = "activate-pdfstorage"
 S3_REGION = "ap-southeast-2"  # change to your region
 S3_ACCESS_KEY = "AKIAU6GDWWBFXN3GGZOV"
 S3_SECRET_KEY="/c2cN1w7xeBYxgHbUNH1/8FPpjVGSYTbMdyhBmnW"
+@router.post("/generate-presigned-url/")
+def generate_presigned_url(file_name: str = Form(...), file_type: str = Form(...)):
+    try:
+        # Initialize S3 client
+        s3_client = boto3.client('s3', 
+                         aws_access_key_id=S3_ACCESS_KEY,
+                         aws_secret_access_key=S3_SECRET_KEY,
+                         region_name=S3_REGION) 
 
+        # Generate a presigned URL for uploading the file
+        presigned_url = s3_client.generate_presigned_url(
+            "put_object",
+            Params={
+                "Bucket": S3_BUCKET_NAME,
+                "Key": file_name,
+                "ContentType": file_type,
+            },
+            ExpiresIn=3600,  # URL expiration time (1 hour)
+        )
+
+        return {"presigned_url": presigned_url}
+
+    except NoCredentialsError:
+        raise HTTPException(status_code=500, detail="AWS credentials not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # Initialize boto3 S3 client
 s3_client = boto3.client('s3', 
@@ -257,7 +282,7 @@ s3_client = boto3.client('s3',
                          region_name=S3_REGION)  # Define your upload folder path
 
 @router.post("/reports", response_model=ReportResponse)
-def create_report(current_user:UserDependency,user_id: int = Form(...),manager_id: int = Form(...), role: str = Form(...), file: UploadFile = File(...), db: Session = Depends(get_db)):
+def create_report(current_user:UserDependency,user_id: int = Form(...),manager_id: int = Form(...), role: str = Form(...), file: str=Form(...), db: Session = Depends(get_db)):
     # Ensure upload directory exists
     # os.makedirs(UPLOAD_FOLDER, exist_ok=True)
     if role not in ["employee", "manager"]:
@@ -265,20 +290,17 @@ def create_report(current_user:UserDependency,user_id: int = Form(...),manager_i
 
 
     # Save uploaded file to the uploads folder
-    pdf_filename = f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{file.filename}"
+    # pdf_filename = f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{file}"
     
 
     # Upload the file to S3
-    try:
-        s3_client.upload_fileobj(file.file, S3_BUCKET_NAME, pdf_filename,ExtraArgs={
+   
+        # s3_client.upload_fileobj(file.file, S3_BUCKET_NAME, pdf_filename,ExtraArgs={
            
-            "ContentDisposition": f"inline; filename={pdf_filename}"  # For inline viewing with filename
-        })
-        pdf_url = f"https://{S3_BUCKET_NAME}.s3.{S3_REGION}.amazonaws.com/{pdf_filename}"
-    except NoCredentialsError:
-        raise HTTPException(status_code=500, detail="AWS credentials not available.")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        #     "ContentDisposition": f"inline; filename={pdf_filename}"  # For inline viewing with filename
+        # })
+    pdf_url = f"https://{S3_BUCKET_NAME}.s3.{S3_REGION}.amazonaws.com/{file}"
+    
     # pdf_path = os.path.join(UPLOAD_FOLDER, pdf_filename)
     # with open(pdf_path, "wb") as f:
     #     f.write(file.file.read())
@@ -317,7 +339,7 @@ def create_report(current_user:UserDependency,user_id: int = Form(...),manager_i
         new_version = ReportVersion(
             report_id=existing_report.id,
             version_number=new_version_number,
-            pdf_path=pdf_url,
+            pdf_path=file,
             # manager_comments=comment  # Use the stored path
         )
         db.add(new_version)
@@ -334,7 +356,7 @@ def create_report(current_user:UserDependency,user_id: int = Form(...),manager_i
         new_report = Report(
             user_id=user_id,
             manager_id=manager_id,
-            pdf_path=pdf_url,
+            pdf_path=file,
             role=role,
             # manager_comments=comment
         )
@@ -346,7 +368,7 @@ def create_report(current_user:UserDependency,user_id: int = Form(...),manager_i
         new_version = ReportVersion(
             report_id=new_report.id,
             version_number=1,
-            pdf_path=pdf_url ,
+            pdf_path=file ,
               # Use the stored path
         )
         db.add(new_version)
@@ -497,7 +519,7 @@ def get_report_versions(current_user:UserDependency,
         for version in versions:
             # Remove redundant `uploads/` prefix if it exists
             clean_path = version.pdf_path.lstrip('./')
-            version.pdf_path = f"http://localhost:8000/{clean_path}"  # Ensure single `uploads/`
+            version.pdf_path = clean_path  # Ensure single `uploads/`
         report_versions.extend(versions)
 
     if not report_versions:
