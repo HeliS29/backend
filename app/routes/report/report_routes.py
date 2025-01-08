@@ -270,7 +270,10 @@ def create_report(current_user:UserDependency,user_id: int = Form(...),manager_i
 
     # Upload the file to S3
     try:
-        s3_client.upload_fileobj(file.file, S3_BUCKET_NAME, pdf_filename)
+        s3_client.upload_fileobj(file.file, S3_BUCKET_NAME, pdf_filename,ExtraArgs={
+            "ACL": "public-read",
+            "ContentDisposition": f"inline; filename={pdf_filename}"  # For inline viewing with filename
+        })
         pdf_url = f"https://{S3_BUCKET_NAME}.s3.{S3_REGION}.amazonaws.com/{pdf_filename}"
     except NoCredentialsError:
         raise HTTPException(status_code=500, detail="AWS credentials not available.")
@@ -309,7 +312,7 @@ def create_report(current_user:UserDependency,user_id: int = Form(...),manager_i
             .first()
         )
         new_version_number = (last_version.version_number + 1) if last_version else 1
-
+        print("pdf_url",pdf_url)
         # Create a new version
         new_version = ReportVersion(
             report_id=existing_report.id,
@@ -326,6 +329,7 @@ def create_report(current_user:UserDependency,user_id: int = Form(...),manager_i
         db.commit()
         create_report_notification(existing_report, role, is_new_version=True,db=db)
     else:
+        print("pdf_url",pdf_url)
         # Create a new report if none exists
         new_report = Report(
             user_id=user_id,
