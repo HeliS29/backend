@@ -368,7 +368,7 @@ def create_report(current_user:UserDependency,user_id: int = Form(...),manager_i
         new_version = ReportVersion(
             report_id=new_report.id,
             version_number=1,
-            pdf_path=file ,
+            pdf_path=file,
               # Use the stored path
         )
         db.add(new_version)
@@ -482,14 +482,22 @@ def create_report_notification(report, role, is_new_version,db):
         # If the report is being created and no version update
         if role == "manager":
             message = f"Manager created {user.name}'s report successfully."
+            notification = New_notification(
+                user_id=report.user_id,  # Notify the user whose report is created
+                message=message,
+                is_read=False,
+                created_at=datetime.now(),
+            )
+            
+        
         else:  # If the user created the report
             message = f"{user.name}'s report has been created successfully."
-        notification = New_notification(
-            user_id=report.user_id,
-            message=message,
-            is_read=False,
-            created_at=datetime.now(),
-        )
+            notification = New_notification(
+                manager_id=user.manager_id,  # Notify the manager of the employee
+                message=message,
+                is_read=False,
+                created_at=datetime.now(),
+            )
     db.add(notification)
     db.commit()
 
