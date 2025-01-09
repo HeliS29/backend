@@ -34,6 +34,7 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
     if not manager_role:
         # Create 'manager' role if it doesn't exist
         manager_role = UserRole(role="manager")
+        
         db.add(manager_role)
         db.commit()
         db.refresh(manager_role)
@@ -53,6 +54,7 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
             new_manager = Manager(
                 name=user.name,
                 email=user.email,
+                # dept=user.dept if user.dept else None,
                  # Assuming `dept` is part of UserCreate schema
             )
             db.add(new_manager)
