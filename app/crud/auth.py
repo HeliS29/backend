@@ -15,12 +15,20 @@ def create_user(db: Session, name: str, email: str, password: str):
     db.add(user)
     db.commit()
     db.refresh(user)
+    
+ 
+    
     return user
+# def create_user(db: Session, name: str, email: str, password: str):
+#     hashed_password = pwd_context.hash(password)
+#     user = User(name=name, email=email, password_hash=hashed_password)
+#     db.add(user)
+#     db.commit()
+#     db.refresh(user)
+#     return user
 
 def authenticate_user(db: Session, email: str, password: str):
-    db.expunge_all()
     user = db.query(User).filter(User.email == email).first()
-    print(user)
     if user and pwd_context.verify(password, user.password_hash):
         return user
     return None
