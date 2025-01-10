@@ -3,19 +3,11 @@ from typing import Optional
 from datetime import datetime
 
 
-# class EmployeeCreate(BaseModel):
-    
-#     manager_id: Optional[int] = None
-#     job_title: Optional[str] = None
-#     organization_id: Optional[int] = None
 class EmployeeCreate(BaseModel):
-    job_title: Optional[str] = None
-    company_name: Optional[str] = None
-    purpose: Optional[str] = None
+    
     manager_id: Optional[int] = None
-
-    class Config:
-        orm_mode = True
+    job_title: Optional[str] = None
+    organization_id: Optional[int] = None
 
 class EmployeeCreateresponse(BaseModel):
     user_id: int
@@ -37,21 +29,13 @@ class EmployeeResponse(BaseModel):
         from_attributes = True
 
 
-# class EmployeeResponseForUpdate(BaseModel):
-#     id: int
-#     manager_id: Optional[int] 
-#     job_title: Optional[str] 
-#     organization_id: Optional[int] 
-#     created_at: datetime
-#     updated_at: datetime
 class EmployeeResponseForUpdate(BaseModel):
     id: int
-    job_title: str
-    company_name: str
-    manager_id:int 
-    purpose: str
+    manager_id: Optional[int] 
+    job_title: Optional[str] 
+    organization_id: Optional[int] 
+    created_at: datetime
     updated_at: datetime
-    
 
     class Config:
         from_attributes = True
@@ -69,6 +53,7 @@ class OrganizationResponse(BaseModel):
     id: int
     name: str
     
+
     class Config:
         from_attributes = True
 
@@ -80,6 +65,7 @@ class ManagerCreate(BaseModel):
 
     class Config:
         from_attributes = True
+
 
 
 class OrganizationCreate(BaseModel):
