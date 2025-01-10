@@ -110,9 +110,3 @@ def get_importance(current_user: UserDependency,user_id: int, db: Session = Depe
 
 
 
-# @router.post("/core_focus_areas/", response_model=List[CoreFocusAreaResponse])
-# def create_core_focus_area(core_focus_area: List[CoreFocusAreaCreate], db: Session = Depends(get_db)):
-#     db_core_focus_area = [CoreFocusArea(**area.dict()) for area in core_focus_area]
-#     db.add_all(db_core_focus_area)
-#     db.commit()
-#     return db_core_focus_area
