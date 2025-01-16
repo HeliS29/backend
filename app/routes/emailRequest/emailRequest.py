@@ -73,18 +73,20 @@ def send_email(current_user:UserDependency,request: EmailRequest, db: Session = 
     db.add(new_email)
     db.commit()
     db.refresh(new_email)
-    attachment_path = report_version.pdf_path
+    # attachment_path = report_version.pdf_path
+    s3_bucket_base_url = "https://activate-pdfstorage.s3.ap-southeast-2.amazonaws.com"
+    attachment_path = f"{s3_bucket_base_url}/{report_version.pdf_path}" 
 
     # Send email using SMTP
     sent_to_manager = send_email_via_smtp(manager_email, new_email.subject, new_email.body, attachment_path)
     sent_to_user = send_email_via_smtp(recipient_email, new_email.subject, new_email.body, attachment_path)
-    sent_to_roadmap = send_email_via_smtp("roadmap@activatehcg.com", new_email.subject, new_email.body, attachment_path)
+    sent_to_roadmap = send_email_via_smtp("helikrish29@gmail.com", new_email.subject, new_email.body, attachment_path)
 
     if sent_to_roadmap:
         new_email.status = "sent"
         new_email.sent_at = datetime.now()
         db.commit()
-    elif sent_to_user:
+    if sent_to_user:
         new_email.status = "sent"
         new_email.sent_at = datetime.now()
         db.commit()

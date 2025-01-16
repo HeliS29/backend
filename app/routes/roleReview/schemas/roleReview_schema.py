@@ -37,13 +37,13 @@ class RoleReviewUpdate(BaseModel):
 
 class RoleReviewResponse(BaseModel):
     id: int
-    # user_id: int
-    # purpose: str
-    # name: str
-    # title: str
-    # organization: str
-    # date: datetime
-    # prepared_by: str
+    user_id: int
+    purpose: str
+    name: str
+    title: str
+    organization: str
+    date: datetime
+    prepared_by: str
     job_summary: str
     created_at: datetime
     updated_at: datetime 
