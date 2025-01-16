@@ -8,8 +8,7 @@ from models.roleReview import RoleReview
 from crud.role_review import (
     create_role_review, 
     get_role_reviews_by_employee, 
-    update_role_review
-    
+    update_role_review   
 )
 from routes.roleReview.schemas.roleReview_schema import (
     RoleReviewCreate,
@@ -19,15 +18,16 @@ from routes.roleReview.schemas.roleReview_schema import (
 
 router = APIRouter()
 UserDependency = Annotated[dict, Depends(get_current_user)]
-# Create Role Review
-# @router.post("/role-review", response_model=RoleReviewResponse)
-# def create_review(role_review: RoleReviewCreate, db: Session = Depends(get_db)):
-#     new_review = create_role_review(db, role_review)
-#     return new_review
+
 
 @router.post("/role-review", response_model=RoleReviewResponse)
 def create_or_update_review(current_user: UserDependency,role_review: RoleReviewCreate, db: Session = Depends(get_db)):
     # Fetch existing reviews for the user
+    if len(role_review.job_summary) > 1000:
+        raise HTTPException(
+            status_code=400,
+            detail="Job summary cannot exceed 1000 characters"
+        )
     existing_reviews = get_role_reviews_by_employee(db, role_review.user_id)
     
     if existing_reviews:

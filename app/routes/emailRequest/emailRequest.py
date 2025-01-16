@@ -16,19 +16,19 @@ router = APIRouter()
 
 UserDependency = Annotated[dict, Depends(get_current_user)]
 
-def notify_user(user_id, message, db):
-    from datetime import datetime
+# def notify_user(user_id, message, db):
+#     from datetime import datetime
 
-    new_notification = Notification(
-        user_id=user_id,
-        message=message,
-        created_at=datetime.now()
-    )
+#     new_notification = Notification(
+#         user_id=user_id,
+#         message=message,
+#         created_at=datetime.now()
+#     )
     
-    db.add(new_notification)
-    db.commit()
+#     db.add(new_notification)
+#     db.commit()
 
-    return new_notification
+#     return new_notification
 
 
 
@@ -78,9 +78,17 @@ def send_email(current_user:UserDependency,request: EmailRequest, db: Session = 
     # Send email using SMTP
     sent_to_manager = send_email_via_smtp(manager_email, new_email.subject, new_email.body, attachment_path)
     sent_to_user = send_email_via_smtp(recipient_email, new_email.subject, new_email.body, attachment_path)
-    sent_to_roadmap = send_email_via_smtp("helikrish29@gmail.com", new_email.subject, new_email.body, attachment_path)
+    sent_to_roadmap = send_email_via_smtp("roadmap@activatehcg.com", new_email.subject, new_email.body, attachment_path)
 
     if sent_to_roadmap:
+        new_email.status = "sent"
+        new_email.sent_at = datetime.now()
+        db.commit()
+    elif sent_to_user:
+        new_email.status = "sent"
+        new_email.sent_at = datetime.now()
+        db.commit()
+    elif sent_to_manager:
         new_email.status = "sent"
         new_email.sent_at = datetime.now()
         db.commit()
@@ -92,57 +100,3 @@ def send_email(current_user:UserDependency,request: EmailRequest, db: Session = 
 
 
 
-
-# @router.post("/send-email")
-# def send_email(request: EmailRequest, db: Session = Depends(get_db)):
-#     # Fetch user and manager email
-#     user = db.query(User).filter(User.id == request.recipient_id).first()
-#     if not user:
-#         raise HTTPException(status_code=404, detail="User not found")
-    
-#     recipient_email = user.email
-
-#     manager = db.query(Manager).filter(Manager.id == user.manager_id).first()
-#     if not manager:
-#         raise HTTPException(status_code=404, detail="Manager not found")
-
-#     manager_email = manager.email
-
-#     # Define roadmap email
-#     roadmap_email = "helikrish29@gmail.com"
-
-#     new_email = EmailQueue(
-#         recipient_id=request.recipient_id,
-#         recipient_type=request.recipient_type,
-#         subject=request.subject,
-#         body=request.body,
-#         sent_at=request.sent_at,
-#     )
-#     db.add(new_email)
-#     db.commit()
-#     db.refresh(new_email)
-
-#     # Send email using SMTP
-#     sent_to_manager = send_email_via_smtp(manager_email, new_email.subject, new_email.body,request.attachment_path)
-#     sent_to_user = send_email_via_smtp(recipient_email, new_email.subject, new_email.body,request.attachment_path)
-#     sent_to_roadmap = send_email_via_smtp(roadmap_email, new_email.subject, new_email.body,request.attachment_path)
-
-#     if sent_to_manager and sent_to_user and sent_to_roadmap:
-#         new_email.status = "sent"
-#         new_email.sent_at = datetime.now()
-#         db.commit()
-
-#         # Create notifications
-#         # message_to_manager = f"Your Role Review report has been sent to {recipient_email}."
-#         # notify_user(manager.id, message_to_manager, db)
-
-#         # message_to_user = f"Your Role Review report has been sent."
-#         # notify_user(new_email.recipient_id, message_to_user, db)
-
-#         # message_to_roadmap = f"Role Review report sent to {recipient_email} and {manager_email}."
-#         # notify_user(None, message_to_roadmap, db)  # Assuming no user_id needed for roadmap notification
-#     else:
-#         new_email.status = "failed"
-#         db.commit()
-
-#     return new_email
