@@ -60,7 +60,7 @@ def send_email(current_user:UserDependency,request: EmailRequest, db: Session = 
         raise HTTPException(status_code=404, detail="No report version found for the user")
 
     # Get the path to the PDF
-    attachment_path = report_version.pdf_path
+    # attachment_path = report_version.pdf_path
     
 
     new_email = EmailQueue(
@@ -73,7 +73,9 @@ def send_email(current_user:UserDependency,request: EmailRequest, db: Session = 
     db.add(new_email)
     db.commit()
     db.refresh(new_email)
-    attachment_path = report_version.pdf_path
+    # attachment_path = report_version.pdf_path
+    s3_bucket_base_url = "https://activate-pdfstorage.s3.ap-southeast-2.amazonaws.com"
+    attachment_path = f"{s3_bucket_base_url}/{report_version.pdf_path}" 
 
     # Send email using SMTP
     sent_to_manager = send_email_via_smtp(manager_email, new_email.subject, new_email.body, attachment_path)
