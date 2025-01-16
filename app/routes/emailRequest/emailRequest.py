@@ -16,8 +16,8 @@ router = APIRouter()
 
 UserDependency = Annotated[dict, Depends(get_current_user)]
 
-# def notify_user(user_id, message, db):
-#     from datetime import datetime
+# # def notify_user(user_id, message, db):
+# #     from datetime import datetime
 
 #     new_notification = Notification(
 #         user_id=user_id,
@@ -80,7 +80,7 @@ def send_email(current_user:UserDependency,request: EmailRequest, db: Session = 
     # Send email using SMTP
     sent_to_manager = send_email_via_smtp(manager_email, new_email.subject, new_email.body, attachment_path)
     sent_to_user = send_email_via_smtp(recipient_email, new_email.subject, new_email.body, attachment_path)
-    sent_to_roadmap = send_email_via_smtp("helikrish29@gmail.com", new_email.subject, new_email.body, attachment_path)
+    sent_to_roadmap = send_email_via_smtp("roadmap@activatehcg.com", new_email.subject, new_email.body, attachment_path)
 
     if sent_to_roadmap:
         new_email.status = "sent"
