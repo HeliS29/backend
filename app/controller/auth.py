@@ -27,26 +27,6 @@ def verify_jwt_token(token: str):
         return None
 
 
-
-# def generate_reset_token(user_id: int):
-#     payload = {
-#         "user_id": user_id,
-#         "exp": datetime.utcnow() + timedelta(hours=1)  # Token valid for 1 hour
-#     }
-#     return jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
-
-# def verify_reset_token(token: str):
-#     try:
-#         payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
-#         return payload.get("user_id")
-#     except jwt.ExpiredSignatureError:
-#         return None
-#     except jwt.InvalidTokenError:
-#         return None
-
-
-
-
 import smtplib
 from email.mime.text import MIMEText
 
