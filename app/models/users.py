@@ -34,6 +34,8 @@ class User(Base):
     company_name = Column(String(100), nullable=True)
     job_title = Column(String(50), nullable=True)
     manager_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    # manager_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+
 
 
 
