@@ -33,6 +33,7 @@ class User(Base):
     manager_id = Column(Integer, ForeignKey("users.id"), nullable=True)
 
 
+
 class UserRole(Base):
     __tablename__ = "user_roles"
     id = Column(Integer, primary_key=True, index=True)
