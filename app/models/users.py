@@ -17,6 +17,9 @@ from database import Base
 #     organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
 #     job_title = Column(String(50), nullable=True)
 #     manager_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+
+
+
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
@@ -31,6 +34,9 @@ class User(Base):
     company_name = Column(String(100), nullable=True)
     job_title = Column(String(50), nullable=True)
     manager_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+
+
+
 
 
 
