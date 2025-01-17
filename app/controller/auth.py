@@ -1,7 +1,9 @@
 from datetime import datetime, timedelta
 
 from fastapi import Depends
-import jwt
+# import jwt
+from jose import jwt as jose_jwt
+
 from config import settings
 from fastapi.security import OAuth2PasswordRequestForm
 from typing import Annotated
@@ -10,10 +12,8 @@ OAuth2Form = Annotated[OAuth2PasswordRequestForm, Depends()]
 def create_jwt_token(data: dict):
     expiration = datetime.now() + timedelta(minutes=settings.JWT_EXPIRATION_MINUTES)
     data.update({"exp": expiration})
-    # print(settings.JWT_SECRET)
-    # print(data)
-    # print(settings.JWT_ALGORITHM)
-    token = jwt.encode(data, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
+    print(settings.JWT_SECRET)   
+    token = jose_jwt.encode(data, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
     return token
 
 def verify_jwt_token(token: str):
@@ -25,26 +25,6 @@ def verify_jwt_token(token: str):
         return None
     except jwt.InvalidTokenError:
         return None
-
-
-
-# def generate_reset_token(user_id: int):
-#     payload = {
-#         "user_id": user_id,
-#         "exp": datetime.utcnow() + timedelta(hours=1)  # Token valid for 1 hour
-#     }
-#     return jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
-
-# def verify_reset_token(token: str):
-#     try:
-#         payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
-#         return payload.get("user_id")
-#     except jwt.ExpiredSignatureError:
-#         return None
-#     except jwt.InvalidTokenError:
-#         return None
-
-
 
 
 import smtplib

@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Date,DateTime,func,Float,Sequence
+
+from sqlalchemy import Column, Integer, String, ForeignKey, Date,DateTime,func,Float,Sequence,Text
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from database import Base
@@ -14,7 +15,8 @@ class RoleReview(Base):
     organization = Column(String(100), nullable=False)
     date = Column(Date, nullable=False)
     prepared_by = Column(String(100), nullable=False)
-    job_summary = Column(String(200), nullable=False)
+    # job_summary = Column(String(1000), nullable=False)
+    job_summary = Column(Text, nullable=False)
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 

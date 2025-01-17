@@ -18,6 +18,7 @@ class ReportCreate(BaseModel):
     user_id: int = Form(...)
     manager_id: int = Form(...)
     role: str = Form(...),
+    file:str=Form(...)
     
 
 class ReportVersionResponse(BaseModel):

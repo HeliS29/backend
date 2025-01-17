@@ -11,7 +11,7 @@ class CoreFocusAreaUpdate(BaseModel):
     
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class CoreFocusAreaCreate(BaseModel):
@@ -21,7 +21,7 @@ class CoreFocusAreaCreate(BaseModel):
     user_id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class CoreFocusAreaResponse(BaseModel):
     id:int
@@ -32,4 +32,4 @@ class CoreFocusAreaResponse(BaseModel):
     # message:Optional[str]
 
     class Config:
-        orm_mode = True
+        from_attributes = True

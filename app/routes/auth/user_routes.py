@@ -34,6 +34,7 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
     if not manager_role:
         # Create 'manager' role if it doesn't exist
         manager_role = UserRole(role="manager")
+        
         db.add(manager_role)
         db.commit()
         db.refresh(manager_role)
@@ -53,6 +54,7 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
             new_manager = Manager(
                 name=user.name,
                 email=user.email,
+                # dept=user.dept if user.dept else None,
                  # Assuming `dept` is part of UserCreate schema
             )
             db.add(new_manager)
@@ -61,25 +63,3 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
 
     return new_user
 
-
-# @router.post("/register", response_model=UserResponse)
-# def register_user(user: UserCreate, db: Session = Depends(get_db)):
-#     existing_user = db.query(User).filter(User.email == user.email).first()
-#     if existing_user:
-#         raise HTTPException(status_code=400, detail="Email already registered")
-#     new_user=create_user(db, user.name, user.email, user.password)
-#     employee_role = db.query(UserRole).filter(UserRole.role == 'employee').first()
-#     if not employee_role:
-#         # Create 'employee' role if it doesn't exist
-#         employee_role = UserRole(role="employee")
-#         db.add(employee_role)
-#         db.commit()
-#         db.refresh(employee_role)
-
-#     # Assign the role ID to the user
-#     new_user.role_id = employee_role.id
-#     db.commit()
-#     db.refresh(new_user)
-
-
-#     return new_user
