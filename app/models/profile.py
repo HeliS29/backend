@@ -24,5 +24,17 @@ class Organization(Base):
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
 
+# class Employee(Base):
+#     __tablename__ = "employees"
+#     id = Column(Integer, primary_key=True, index=True)
+#     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+#     manager_id = Column(Integer, ForeignKey("managers.id"), nullable=True)
+#     job_title = Column(String(100), nullable=True)
+#     organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
+#     created_at = Column(DateTime,default=func.now())
+    # updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
+    # # Relationships
+    # manager = relationship("Manager", backref="employees")
+    # organization = relationship("Organization", backref="employees")
     

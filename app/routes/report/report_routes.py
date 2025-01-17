@@ -16,6 +16,8 @@ import boto3
 from botocore.exceptions import NoCredentialsError
 
 router = APIRouter()
+
+
 UserDependency = Annotated[dict, Depends(get_current_user)]
 
 
@@ -36,8 +38,9 @@ def get_notifications(current_user:UserDependency, db: Session = Depends(get_db)
             )
             .all()
         )
-    return notifications
+    
 
+    return notifications
 
 
 @router.put("/notifications/{notification_id}/mark-read/")
@@ -53,7 +56,6 @@ def mark_notification_as_read(current_user:UserDependency,
     notification.is_read=True
     db.commit()
     return {"message": "Notification marked as read"}
-
 
 @router.get("/notifications/manager/", response_model=List[NotificationResponse])
 def get_notifications_by_manager(current_user:UserDependency, db: Session = Depends(get_db)):
@@ -73,6 +75,21 @@ def get_notifications_by_manager(current_user:UserDependency, db: Session = Depe
     )
     return notifications
 
+# @router.get("/notifications/manager/{manager_id}", response_model=List[NotificationResponse])
+# def get_notifications_by_manager(manager_id: int, db: Session = Depends(get_db)):
+#     # Fetch all users under the manager
+#     users = db.query(User).filter(User.manager_id == manager_id).all()
+#     user_ids = [user.id for user in users]
+    
+#     # Fetch notifications for these users
+#     notifications = (
+#         db.query(Notification)
+#         .filter(Notification.user_id.in_(user_ids), Notification.is_read == False)
+#         .order_by(Notification.created_at.desc())
+#         .all()
+#     )
+#     return notifications
+
 
 @router.put("/reports/{report_id}/versions", response_model=ReportVersionResponse)
 def create_report_version(current_user:UserDependency,report_id: int, db: Session = Depends(get_db)):
@@ -87,6 +104,7 @@ def create_report_version(current_user:UserDependency,report_id: int, db: Sessio
         version_number=new_version_number,
         pdf_path=new_pdf_path
     )
+
     db.add(new_version)
     db.commit()
     db.refresh(new_version)
@@ -153,6 +171,71 @@ def get_report_content_by_version(current_user:UserDependency,
         "content": content
     }
 
+# @router.post("/reports", response_model=ReportResponse)
+# def create_report(user_id: int = Form(...),manager_id: int = Form(...), file: UploadFile = File(...), db: Session = Depends(get_db)):
+#     # Ensure upload directory exists
+#     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+#     # Save uploaded file to the uploads folder
+#     pdf_filename = f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{file.filename}"
+#     pdf_path = os.path.join(UPLOAD_FOLDER, pdf_filename)
+#     with open(pdf_path, "wb") as f:
+#         f.write(file.file.read())
+#     print(f"File saved at: {pdf_path}")
+
+#     # Fetch the existing report for the user if it exists
+#     existing_report = db.query(Report).filter(Report.user_id == user_id).first()
+
+#     if existing_report:
+#         # Increment the version number for the existing report
+#         last_version = (
+#             db.query(ReportVersion)
+#             .filter(ReportVersion.report_id == existing_report.id)
+#             .order_by(ReportVersion.version_number.desc())
+#             .first()
+#         )
+#         new_version_number = (last_version.version_number + 1) if last_version else 1
+
+#         # Create a new version
+#         new_version = ReportVersion(
+#             report_id=existing_report.id,
+#             version_number=new_version_number,
+#             pdf_path=pdf_path  # Use the stored path
+#         )
+#         db.add(new_version)
+#         db.commit()
+#         db.refresh(new_version)
+
+#         # Update the report's current version
+#         existing_report.current_version_id = new_version.id
+#         db.commit()
+#     else:
+#         # Create a new report if none exists
+#         new_report = Report(
+#             user_id=user_id,
+#             manager_id=manager_id,
+#         )
+#         db.add(new_report)
+#         db.commit()
+#         db.refresh(new_report)
+
+#         # Generate the first version
+#         new_version = ReportVersion(
+#             report_id=new_report.id,
+#             version_number=1,
+#             pdf_path=pdf_path  # Use the stored path
+#         )
+#         db.add(new_version)
+#         db.commit()
+#         db.refresh(new_version)
+
+#         # Update the current version ID in the report
+#         new_report.current_version_id = new_version.id
+#         db.commit()
+#         existing_report = new_report  # For consistency in variable naming
+
+#     return existing_report
+
 
 # UPLOAD_FOLDER = "./uploads"
 # from dotenv import load_dotenv
@@ -205,12 +288,15 @@ def create_report(current_user:UserDependency,user_id: int = Form(...),manager_i
     if role not in ["employee", "manager"]:
         raise HTTPException(status_code=400, detail="Invalid role. It must be either 'user' or 'manager'.")
 
+
     # Save uploaded file to the uploads folder
     # pdf_filename = f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{file}"
     
+
     # Upload the file to S3
    
-        # s3_client.upload_fileobj(file.file, S3_BUCKET_NAME, pdf_filename,ExtraArgs={        
+        # s3_client.upload_fileobj(file.file, S3_BUCKET_NAME, pdf_filename,ExtraArgs={
+           
         #     "ContentDisposition": f"inline; filename={pdf_filename}"  # For inline viewing with filename
         # })
     pdf_url = f"https://{S3_BUCKET_NAME}.s3.{S3_REGION}.amazonaws.com/{file}"
@@ -417,6 +503,20 @@ def create_report_notification(report, role, is_new_version,db):
 
     return notification
 
+    # Create the notification
+    
+    # notification = Notification(
+    #     user_id=report.user_id,
+    #     message=message,
+    #     is_read_by_user=False,
+    #     is_read_by_manager=False,
+    #     created_at=datetime.now(),
+    #     manager_id=report.manager_id if report.manager_id else None
+    # )
+    # db.add(notification)
+    # db.commit()
+
+
 
 
 @router.get("/reports/{user_id}/versions", response_model=List[ReportVersionResponse])
@@ -445,3 +545,27 @@ def get_report_versions(current_user:UserDependency,
 
     return report_versions
 
+
+
+
+# @router.get("/reports/{user_id}/versions", response_model=List[ReportVersionResponse])
+# def get_report_versions(
+#     user_id: int,
+#     db: Session = Depends(get_db)
+# ):
+#     # Fetch reports for the given user_id
+#     reports = db.query(Report).filter(Report.user_id == user_id).all()
+
+#     if not reports:
+#         raise HTTPException(status_code=404, detail="Reports not found for the user")
+
+#     # Fetch versions for each report
+#     report_versions = []
+#     for report in reports:
+#         versions = db.query(ReportVersion).filter(ReportVersion.report_id == report.id).all()
+#         report_versions.extend(versions)
+
+#     if not report_versions:
+#         raise HTTPException(status_code=404, detail="Versions not found for the reports")
+
+#     return report_versions

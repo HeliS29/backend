@@ -1,5 +1,4 @@
-from typing import Any, Dict, Text
-from pydantic import BaseModel,model_validator,Field,constr
+from pydantic import BaseModel,model_validator,Field
 from datetime import datetime
 
 
@@ -11,14 +10,10 @@ class RoleReviewCreate(BaseModel):
     organization: str
     date: datetime
     prepared_by: str
-    # job_summary: str 
-    job_summary: Text
-    # class Config:
-    #     from_attributes = True
-    #     # Optional: Perform truncation if string length exceeds limit
-    #     @staticmethod
-    #     def validate_job_summary(value: str) -> str:
-    #         return value[:1000] 
+    job_summary: str
+
+    class Config:
+        from_attributes = True
 
 
 class RoleReviewUpdate(BaseModel):
@@ -28,7 +23,7 @@ class RoleReviewUpdate(BaseModel):
     organization: str = None
     date: datetime=None
     prepared_by: str = None
-    job_summary: constr(max_length=1000) # type: ignore
+    job_summary: str = None
 
     class Config:
         from_attributes = True

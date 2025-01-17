@@ -6,7 +6,7 @@ class UserResponse(BaseModel):
     name: str
     email: str
     job_title: Optional[str]
-    # organization_id: Optional[int]
+    organization_id: Optional[int]
 
     class Config:
         from_attributes = True
