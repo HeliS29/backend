@@ -104,8 +104,10 @@ class OrganizationResponse(BaseModel):
 
 
 class OrganizationCreate(BaseModel):
-    name: str
-
+    organization_name: str
+    manager_email:EmailStr
+    manager_password:str
+    manager_name:str
     class Config:
         from_attributes = True
 

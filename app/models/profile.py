@@ -9,7 +9,7 @@ class Manager(Base):
     __tablename__ = "managers"
     id = Column(Integer, primary_key=True, index=True)
     name=Column(String(100), nullable=False)
-    email = Column(String(50), unique=True, nullable=False)
+    email = Column(String(50), nullable=False)
     # dept = Column(String(100), nullable=True)
     organization_id = Column(Integer, ForeignKey("organizations.id",ondelete="CASCADE"), nullable=True)
     created_at = Column(DateTime,default=func.now())
