@@ -1,13 +1,19 @@
-from typing import Annotated
-from fastapi import APIRouter, Depends, HTTPException,status
+
+from smtplib import SMTP
+from typing import Annotated, List
+from fastapi import APIRouter, Body, Depends, HTTPException,status
+from controller.auth import create_jwt_token, verify_jwt_token
+from routes.emailRequest.emailRequest import send_email
+from routes.auth.schemas.auth_schema import UserResponse
 from sqlalchemy.orm import Session
 from database import get_db
-from models.users import User
+from models.users import User, UserRole
+from passlib.context import CryptContext
 from models.profile import *
-from routes.profile.schemas.profile_schema import EmployeeCreate,EmployeeCreateresponse,EmployeeResponseForUpdate,EmployeeResponse,ManagerResponse,OrganizationResponse,ManagerCreate,OrganizationCreate
+from routes.profile.schemas.profile_schema import CurrentUserInfoResponse, EmployeeCreate,EmployeeCreateresponse,EmployeeResponseForUpdate,EmployeeResponse, LinkRegistrationResponse,ManagerResponse, NewEmployeeCreate, NewEmployeeResponse,OrganizationResponse,ManagerCreate,OrganizationCreate, RegistrationReq
 from controller.utils.current_user import get_current_user
 router = APIRouter()
-
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 UserDependency = Annotated[dict, Depends(get_current_user)]
 # @router.get("/employee/profile/", response_model=EmployeeResponse)
 # def get_employee_profile(current_user: UserDependency, db: Session = Depends(get_db)):
@@ -41,8 +47,8 @@ def get_employee_profile(current_user: UserDependency, db: Session = Depends(get
     return {
         "id": employee.id,
         "job_title": employee.job_title if employee.job_title is not None else None,
-        "company_name": employee.company_name if employee.company_name is not None else None,
-        "manager_id": employee.manager_id if employee.manager_id is not None else None,
+        # "company_name": employee.company_name if employee.company_name is not None else None,
+        # "manager_id": employee.manager_id if employee.manager_id is not None else None,
         "purpose": employee.purpose if employee.purpose is not None else None,
         "updated_at": employee.updated_at,
     }
@@ -101,22 +107,41 @@ def update_employee_profile(
        
 #          # Fetch email from the users table
 #     }
-@router.get("/current-user/{user_id}")
-def get_current_user_info(user_id:int, db: Session = Depends(get_db),current_user: dict = Depends(get_current_user)):
-    # Use the current_user['id'] to fetch the user from the database
+@router.get("/current-user/{user_id}", response_model=CurrentUserInfoResponse)
+def get_current_user_info(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)  # Assuming this gives you the current logged-in user
+):
+    # Fetch the user and their associated organization
     user = db.query(User).filter(User.id == user_id).first()
 
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
+    # Fetch the organization using the organization_id from the user
+    organization = db.query(Organization).filter(Organization.id == user.organization_id).first()
+
+    # Check if the organization exists
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    # Fetch the manager using the manager_id from the user
+    manager = db.query(Manager).filter(Manager.id == user.manager_id).first()
+
+    # Check if the manager exists
+    if not manager:
+        raise HTTPException(status_code=404, detail="Manager not found")
+
+    # Return user info including the organization name as company_name and manager details
     return {
-        "name": user.name,  # Fetch name from the users table
-        "email": user.email ,
-        "job_title": user.job_title ,
-        "company_name": user.company_name,
-        "purpose": user.purpose,
-       
-         # Fetch email from the users table
+        "name": user.name,  # User's name
+        "email": user.email,  # User's email
+        "job_title": user.job_title,  # User's job title
+        "company_name": organization.name,  # Organization name as company_name
+        "purpose": user.purpose,  # User's purpose
+        "manager_name": manager.name,  # Manager's name
+        "manager_email": manager.email,  # Manager's email
     }
 
 # @router.put("/employee/profile/", response_model=EmployeeResponseForUpdate)
@@ -158,21 +183,63 @@ def get_organizations(db: Session = Depends(get_db),current_user: User = Depends
 
 
 # POST API for adding a manager
+# @router.post("/add/managers", response_model=ManagerResponse)
+# def create_manager(current_user:UserDependency,manager: ManagerCreate, db: Session = Depends(get_db)):
+#     # Check if manager with the same email already exists
+#     existing_manager = db.query(Manager).filter(Manager.email == manager.email).first()
+#     if existing_manager:
+#         raise HTTPException(status_code=400, detail="Manager with this email already exists")
+    
+#     # Create a new manager
+#     new_manager = Manager(**manager.dict())
+#     db.add(new_manager)
+#     db.commit()
+#     db.refresh(new_manager)
+    
+#     return new_manager
+
 @router.post("/add/managers", response_model=ManagerResponse)
-def create_manager(current_user:UserDependency,manager: ManagerCreate, db: Session = Depends(get_db)):
-    # Check if manager with the same email already exists
+def create_manager(current_user: UserDependency, manager: ManagerCreate, db: Session = Depends(get_db)):
+    # Check if manager with the same email already exists in Manager table
     existing_manager = db.query(Manager).filter(Manager.email == manager.email).first()
     if existing_manager:
         raise HTTPException(status_code=400, detail="Manager with this email already exists")
-    
-    # Create a new manager
-    new_manager = Manager(**manager.dict())
+
+    # Check if the organization exists
+    organization = db.query(Organization).filter(Organization.id == manager.organization_id).first()
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    # Create the new manager in the Manager table
+    new_manager = Manager(
+        name=manager.name,
+        email=manager.email,
+        organization_id=manager.organization_id,  # Associate with organization
+    )
     db.add(new_manager)
     db.commit()
     db.refresh(new_manager)
-    
-    return new_manager
 
+    # Now create the manager in the User table
+    user_role = db.query(UserRole).filter(UserRole.role == 'manager').first()
+    if not user_role:
+        raise HTTPException(status_code=404, detail="Manager role not found")
+    hashed_password = pwd_context.hash(manager.password)
+    # Create a new user associated with the manager
+    new_user = User(
+        name=manager.name,
+        email=manager.email,
+        password_hash=hashed_password,  # Hash the password before saving in production
+        role_id=user_role.id,
+        
+        organization_id=manager.organization_id,  # Associate the manager_id with user
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+
+    # Return the created manager
+    return new_manager
 
 # POST API for creating an organization
 @router.post("/add/organizations", response_model=OrganizationResponse)
@@ -189,3 +256,209 @@ def create_organization(current_user:UserDependency,organization: OrganizationCr
     db.refresh(new_organization)
     
     return new_organization
+
+
+
+# @router.post("/add/employee", response_model=NewEmployeeResponse)
+# def create_employee(current_manager: UserDependency, employee: NewEmployeeCreate, db: Session = Depends(get_db)):
+#     # Extract manager_id from the current user
+#     manager_id = current_manager["manager_id"]
+
+#     # Get the manager using the manager_id
+#     manager = db.query(Manager).filter(Manager.id == manager_id).first()
+#     if not manager:
+#         raise HTTPException(status_code=404, detail="Manager not found")
+
+#     # Check if the employee already exists
+#     existing_employee = db.query(User).filter(User.email == employee.email).first()
+#     if existing_employee:
+#         raise HTTPException(status_code=400, detail="Employee with this email already exists")
+    
+#     # Hash the password before storing it
+#     hashed_password = pwd_context.hash(employee.password)  # Hash password with bcrypt
+
+#     # Get the role from UserRole table (use employee.role_name from the request to match the role)
+#     user_role = db.query(UserRole).filter(UserRole.role == "employee").first()
+#     if not user_role:
+#         raise HTTPException(status_code=404, detail=f"Role '{employee.role}' not found")
+
+#     # Create the new employee, associating the organization_id from the manager
+#     new_employee = User(
+#         name=employee.name,
+#         email=employee.email,
+#         password_hash=hashed_password,
+#         role_id=user_role.id,  # Assign the correct role_id from UserRole
+#         organization_id=manager.organization_id,  # Use manager's organization_id
+#         manager_id=manager.id,  # Associate with the manager who is creating this employee
+#        # Optionally, add job title if provided
+#     )
+
+#     # Add and commit the new employee
+#     db.add(new_employee)
+#     db.commit()
+#     db.refresh(new_employee)
+
+#     # Return the newly created employee
+#     return new_employee
+
+
+@router.post("/add/employee", response_model=NewEmployeeResponse)
+def create_employee_and_send_email(
+    current_manager:UserDependency,  # Current manager dependency
+    employee: NewEmployeeCreate,
+    db: Session = Depends(get_db),
+):
+    manager_id = current_manager["manager_id"]
+
+    # Get the manager using the manager_id
+    manager = db.query(Manager).filter(Manager.id == manager_id).first()
+    if not manager:
+        raise HTTPException(status_code=404, detail="Manager not found")
+    # Check if manager exists
+   
+    # Check if employee already exists
+    existing_employee = db.query(User).filter(User.email == employee.email).first()
+    if existing_employee:
+        raise HTTPException(status_code=400, detail="Employee with this email already exists")
+
+    # Generate a unique token for the form link
+    form_token = create_jwt_token({"email": employee.email})
+    print("previopus toke",form_token)
+    # Add employee record with status `pending`
+    new_employee = User(
+        name=employee.name,
+        email=employee.email,
+        role_id=db.query(UserRole).filter(UserRole.role == "employee").first().id,
+        organization_id=manager.organization_id,
+        manager_id=manager.id,
+        
+         # Mark as pending
+          # Store the token for verification
+    )
+    db.add(new_employee)
+    db.commit()
+    db.refresh(new_employee)
+
+    # Send email with the form link
+    # form_link = f"https://yourfrontend.com/complete-registration?token={form_token}"
+    form_link = f"http://activate-hrm.s3-website-ap-southeast-2.amazonaws.com/complete-registration?token={form_token}"
+    email_subject = "Complete Your Employee Registration"
+    email_body = f"""
+    Hello {employee.name},
+
+    Your manager has invited you to join the organization. Please complete your registration by clicking the link below:
+
+    {form_link}
+
+    Thank you!
+    """
+    print(employee.email)
+    send_registration_email(employee.name,employee.email,form_token)
+
+    return new_employee
+
+
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from smtplib import SMTP
+
+def send_registration_email(employee_name: str, employee_email: str,form_token: str):
+    """Send registration email to the employee."""
+    # Construct the form link
+    print("form",form_token)
+    form_link = f"https:/http://localhost:3001/complete-registration?token={form_token}"
+
+    # Email content
+    print(f"Recipient email: {employee_email}")
+    email_subject = "Complete Your Employee Registration"
+    email_body = f"""
+    Hello {employee_name},
+
+    Your manager has invited you to join the organization. Please complete your registration by clicking the link below:
+
+    {form_link}
+
+    Thank you!
+    """
+    print("hello")
+    
+    # SMTP Configuration (Example for Gmail)
+    import smtplib
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+    from email.mime.base import MIMEBase
+    from email import encoders
+    
+
+    # Email configuration
+    smtp_server = "smtp.gmail.com"
+    smtp_port = 587
+    EMAIL_USERNAME = "helishah2116@gmail.com"  # Your Gmail address
+    EMAIL_PASSWORD = "lkyr uoby fjql ygka"  # Your app password
+
+    # Create the email message
+    msg = MIMEMultipart()
+    msg['From'] = EMAIL_USERNAME
+    msg['To'] = employee_email
+    msg['Subject'] = email_subject
+
+    # Attach the body
+    msg.attach(MIMEText(email_body, 'plain'))
+
+    # Attach the file from the URL if provided
+    
+
+    # Sending the email
+    try:
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(EMAIL_USERNAME, EMAIL_PASSWORD)  # Correct username and password
+            server.send_message(msg)
+        print(f"Email sent successfully to {employee_email}")
+        return True
+    except Exception as e:
+        print(f"Error sending email: {e}")
+        return False
+@router.post("/complete-registration", response_model=LinkRegistrationResponse)
+def complete_registration(
+    request: RegistrationReq,
+    db: Session = Depends(get_db)
+):
+    # Verify token
+    payload = verify_jwt_token(request.token)
+    print(payload)
+    
+   
+    
+    # Get user data from the payload (assuming payload contains user_id or email)
+    email = payload.get("email")
+    if not email:
+        raise HTTPException(status_code=400, detail="Invalid token payload")
+
+    # Fetch the user by user_id (assuming the token contains the user_id)
+    user = db.query(User).filter(User.email == email).first()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Hash password and update user details
+    hashed_password = pwd_context.hash(request.password)
+    user.password_hash = hashed_password
+    user.job_title = request.job_title
+    user.purpose = request.purpose
+    user.verification_code = None  # Remove token after completion
+    user.active = True  # Mark the user as active
+    db.commit()
+
+    # Return the response model with a success message
+    return LinkRegistrationResponse(message="Registration completed successfully!")
+@router.get("/organizations/{org_id}/managers", response_model=List[ManagerResponse])
+def get_managers_by_organization(org_id: int, db: Session = Depends(get_db)):
+    # Query to fetch managers for a given organization
+    managers = db.query(Manager).filter(Manager.organization_id == org_id).all()
+    
+    if not managers:
+        raise HTTPException(status_code=404, detail="No managers found for this organization")
+    
+    return managers

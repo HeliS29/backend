@@ -24,7 +24,7 @@ async def get_current_user(token=Depends(oauth2_scheme)):
         manager_id: str = payload.get("manager_id")
         # user_name: str = payload.get("")
         user_role: str = payload.get("role")
-        if user_id is None and manager_id is None:
+        if user_role is None:
             raise HTTPException(
                 status_code=401,
                 detail=f"[get_current_user] Could not validate credentials{user_id}",

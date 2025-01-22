@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from models.admin import Admin
 from controller.utils.current_user import get_current_user
 from sqlalchemy.orm import Session
 from database import get_db
@@ -40,6 +41,14 @@ def login(user: OAuth2Form, db: Session = Depends(get_db)):
         # Check if superadmin user exists in the database, create if it doesn't
         superadmin_user = db.query(User).filter(User.email == email).first()
         if not superadmin_user:
+            new_admin = Admin(
+            email=email,
+            password_hash=hash_password(password),  # Replace with actual password hashing logic
+            is_active=True
+        )
+            db.add(new_admin)
+            db.commit()
+            db.refresh(new_admin)
             new_user = User(
                 name="Admin",
                 email=email,
