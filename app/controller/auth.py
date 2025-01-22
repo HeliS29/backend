@@ -18,12 +18,12 @@ def create_jwt_token(data: dict):
 
 def verify_jwt_token(token: str):
     try:
-        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
+        payload = jose_jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
         print(payload)
         return payload
-    except jwt.ExpiredSignatureError:
+    except jose_jwt.ExpiredSignatureError:
         return None
-    except jwt.InvalidTokenError:
+    except jose_jwt.InvalidTokenError:
         return None
 
 

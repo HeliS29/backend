@@ -47,23 +47,44 @@ class EmployeeResponse(BaseModel):
 class EmployeeResponseForUpdate(BaseModel):
     id: int
     job_title: str
-    company_name: str
-    manager_id:int 
+    # company_name: str
+    # manager_id:int 
     purpose: str
     updated_at: datetime
     
 
     class Config:
         from_attributes = True
-class ManagerResponse(BaseModel):
-    id: int
+# class ManagerResponse(BaseModel):
+#     id: int
+#     email: str
+#     dept: Optional[str]
+#     name:str
+
+#     class Config:
+#         from_attributes = True
+class ManagerCreate(BaseModel):
+    name: str
     email: str
-    dept: Optional[str]
-    name:str
+    password: str  # Ensure password is hashed in the backend before saving
+    # organization_id: int  # FK to the Organization table
+     # Optional field for phone number
 
     class Config:
-        from_attributes = True
+        orm_mode = True
 
+# Schema for manager response
+class ManagerResponse(BaseModel):
+    id: int
+    name: str
+    email: str
+    organization_id: int
+    
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        orm_mode = True
 
 class OrganizationResponse(BaseModel):
     id: int
@@ -73,13 +94,13 @@ class OrganizationResponse(BaseModel):
         from_attributes = True
 
 
-class ManagerCreate(BaseModel):
-    name: str
-    email: EmailStr
-    dept: Optional[str] = None
+# class ManagerCreate(BaseModel):
+#     name: str
+#     email: EmailStr
+#     dept: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+#     class Config:
+#         from_attributes = True
 
 
 class OrganizationCreate(BaseModel):
@@ -87,3 +108,44 @@ class OrganizationCreate(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class NewEmployeeCreate(BaseModel):
+    name: str
+    email: str
+    # password: str  # In production, make sure to handle password securely
+class ResendEmail(BaseModel):
+    name: str
+    email: str 
+   
+class updateDetails(BaseModel):
+    token: str 
+    job_title: Optional[str]
+    purpose: Optional[str] 
+
+class NewEmployeeResponse(BaseModel):
+    message: str
+    user_id: int
+    email: str
+    name: str
+
+
+
+class RegistrationReq(BaseModel):
+    token: str 
+    password: str 
+    job_title: Optional[str] = None
+    purpose: Optional[str] =None
+
+class LinkRegistrationResponse(BaseModel):
+    message: str
+    status: str = "success" 
+
+class CurrentUserInfoResponse(BaseModel):
+    name: str # User's name
+    email: EmailStr # User's email
+    job_title: Optional[str]  # User's job title
+    company_name: str 
+    manager_name:str 
+    manager_email:EmailStr# Organization name as company_name
+    purpose: Optional[str]
