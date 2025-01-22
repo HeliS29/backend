@@ -231,7 +231,8 @@ def create_manager(current_user: UserDependency, manager: ManagerCreate, db: Ses
     new_manager = Manager(
         name=manager.name,
         email=manager.email,
-        organization_id=organization_id,  # Associate with current manager's organization
+        organization_id=organization_id, 
+         # Associate with current manager's organization
     )
     db.add(new_manager)
     db.commit()
@@ -252,7 +253,8 @@ def create_manager(current_user: UserDependency, manager: ManagerCreate, db: Ses
         email=manager.email,
         password_hash=hashed_password,  # Hash the password before saving in production
         role_id=user_role.id,
-        organization_id=organization_id,  # Associate the manager_id with user
+        organization_id=organization_id,
+        manager_id=current_user_id,  # Associate the manager_id with user
     )
     db.add(new_user)
     db.commit()
@@ -317,37 +319,45 @@ def send_manager_email(manager_email: str, manager_name: str, password: str):
 #     db.refresh(new_organization)
     
 #     return new_organization
+
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 @router.post("/add/organizations", response_model=OrganizationResponse)
 def create_organization_with_manager(
     current_user: UserDependency,
-    organization: OrganizationCreate,
+    organization: OrganizationCreate, 
+    
     db: Session = Depends(get_db),
 ):
     # Check if an organization with the same name already exists
-    existing_organization = db.query(Organization).filter(Organization.name == organization.name).first()
+    existing_organization = db.query(Organization).filter(Organization.name == organization.organization_name).first()
     if existing_organization:
         raise HTTPException(status_code=400, detail="Organization with this name already exists")
-    
+
     # Create a new organization
-    new_organization = Organization(**organization.dict())
+    new_organization = Organization(name=organization.organization_name)
     db.add(new_organization)
     db.commit()
     db.refresh(new_organization)
-    
+
     # Check if the 'manager' role exists
     user_role = db.query(UserRole).filter(UserRole.role == 'manager').first()
     if not user_role:
         raise HTTPException(status_code=404, detail="Manager role not found")
-    
-    # Create a default manager for the organization
-    default_password = "Default@1234"  # Set a default password (you can customize this)
-    hashed_password = pwd_context.hash(default_password)
 
-    # Generate default manager details
-    manager_email = f"admin@{organization.name.lower().replace(' ', '')}.com"
+    # Check if a manager already exists with the same email in this organization
+    existing_manager = db.query(Manager).filter(Manager.email == organization.manager_email, Manager.organization_id == new_organization.id).first()
+    print("existing_manager",existing_manager)
+    if existing_manager:
+        raise HTTPException(status_code=400, detail="A manager with this email already exists in the same organization")
+
+    # Hash the provided manager password
+    hashed_password = pwd_context.hash(organization.manager_password)
+
+    # Create a manager using the provided details
     new_manager = Manager(
-        name=f"Admin {organization.name}",
-        email=manager_email,
+        name=organization.manager_name,
+        email=organization.manager_email,
         organization_id=new_organization.id,
     )
     db.add(new_manager)
@@ -365,9 +375,6 @@ def create_organization_with_manager(
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-
-    # Optionally send an email with login credentials to the manager
-    
 
     return new_organization
 
@@ -486,13 +493,13 @@ def create_employee_and_send_email(
     existing_employee = db.query(User).filter(User.id == user_id).first()
     
     # Generate a unique token for the form link
-    form_token = create_jwt_token({"email": existing_employee.email})
+    form_token = create_jwt_token({"user_id": existing_employee.id})
     print("previopus toke",form_token)
     # Add employee record with status `pending`
 
     # Send email with the form link
-    # form_link = f"http://localhost:3001/resend-email?token={form_token}"
-    form_link = f"http://activate-hrm.s3-website-ap-southeast-2.amazonaws.com/resend-email?token={form_token}"
+    form_link = f"http://localhost:3001/user_details-stepss/{existing_employee.id}"
+    # form_link = f"http://activate-hrm.s3-website-ap-southeast-2.amazonaws.com/resend-email?token={form_token}"
     email_subject = "Complete Your Employee Profile"
     email_body = f"""
     Hello,
