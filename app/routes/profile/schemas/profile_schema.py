@@ -67,7 +67,7 @@ class ManagerCreate(BaseModel):
     name: str
     email: str
     password: str  # Ensure password is hashed in the backend before saving
-    organization_id: int  # FK to the Organization table
+    # organization_id: int  # FK to the Organization table
      # Optional field for phone number
 
     class Config:
@@ -114,26 +114,28 @@ class NewEmployeeCreate(BaseModel):
     name: str
     email: str
     # password: str  # In production, make sure to handle password securely
-  
-    
+class ResendEmail(BaseModel):
+    name: str
+    email: str 
+   
+class updateDetails(BaseModel):
+    token: str 
+    job_title: Optional[str]
+    purpose: Optional[str] 
 
 class NewEmployeeResponse(BaseModel):
-    id: int
-    name: str
+    message: str
+    user_id: int
     email: str
-    role_id: int
-    organization_id: int
-    manager_id: int
-    created_at: datetime
-    updated_at: datetime
+    name: str
 
 
 
 class RegistrationReq(BaseModel):
     token: str 
     password: str 
-    job_title: str  
-    purpose: str 
+    job_title: Optional[str] = None
+    purpose: Optional[str] =None
 
 class LinkRegistrationResponse(BaseModel):
     message: str
@@ -142,8 +144,8 @@ class LinkRegistrationResponse(BaseModel):
 class CurrentUserInfoResponse(BaseModel):
     name: str # User's name
     email: EmailStr # User's email
-    job_title: str  # User's job title
+    job_title: Optional[str]  # User's job title
     company_name: str 
     manager_name:str 
     manager_email:EmailStr# Organization name as company_name
-    purpose: str
+    purpose: Optional[str]

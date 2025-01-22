@@ -10,7 +10,7 @@ from database import get_db
 from models.users import User, UserRole
 from passlib.context import CryptContext
 from models.profile import *
-from routes.profile.schemas.profile_schema import CurrentUserInfoResponse, EmployeeCreate,EmployeeCreateresponse,EmployeeResponseForUpdate,EmployeeResponse, LinkRegistrationResponse,ManagerResponse, NewEmployeeCreate, NewEmployeeResponse,OrganizationResponse,ManagerCreate,OrganizationCreate, RegistrationReq
+from routes.profile.schemas.profile_schema import CurrentUserInfoResponse, EmployeeCreate,EmployeeCreateresponse,EmployeeResponseForUpdate,EmployeeResponse, LinkRegistrationResponse,ManagerResponse, NewEmployeeCreate, NewEmployeeResponse,OrganizationResponse,ManagerCreate,OrganizationCreate, RegistrationReq, ResendEmail, updateDetails
 from controller.utils.current_user import get_current_user
 router = APIRouter()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -197,24 +197,41 @@ def get_organizations(db: Session = Depends(get_db),current_user: User = Depends
 #     db.refresh(new_manager)
     
 #     return new_manager
+  # Adjust imports as needed
 
+
+
+# Create manager API
 @router.post("/add/managers", response_model=ManagerResponse)
 def create_manager(current_user: UserDependency, manager: ManagerCreate, db: Session = Depends(get_db)):
-    # Check if manager with the same email already exists in Manager table
-    existing_manager = db.query(Manager).filter(Manager.email == manager.email).first()
-    if existing_manager:
-        raise HTTPException(status_code=400, detail="Manager with this email already exists")
+    # Fetch current logged-in user (assumed that current_user is a dependency containing user info)
+    print(current_user)
+    current_user_id = current_user['manager_id']  # Assuming the `UserDependency` includes `id`
+    
+    # Fetch the manager associated with the current user
+    current_manager = db.query(Manager).filter(Manager.id == current_user_id).first()
+    
+    if not current_manager:
+        raise HTTPException(status_code=404, detail="Manager not found for the current user")
+    
+    # Get the organization ID of the current manager
+    organization_id = current_manager.organization_id
 
     # Check if the organization exists
-    organization = db.query(Organization).filter(Organization.id == manager.organization_id).first()
+    organization = db.query(Organization).filter(Organization.id == organization_id).first()
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
+
+    # Check if manager with the same email already exists in the same organization
+    existing_manager = db.query(Manager).filter(Manager.email == manager.email, Manager.organization_id == organization_id).first()
+    if existing_manager:
+        raise HTTPException(status_code=400, detail="Manager with this email already exists in this organization")
 
     # Create the new manager in the Manager table
     new_manager = Manager(
         name=manager.name,
         email=manager.email,
-        organization_id=manager.organization_id,  # Associate with organization
+        organization_id=organization_id,  # Associate with current manager's organization
     )
     db.add(new_manager)
     db.commit()
@@ -224,27 +241,89 @@ def create_manager(current_user: UserDependency, manager: ManagerCreate, db: Ses
     user_role = db.query(UserRole).filter(UserRole.role == 'manager').first()
     if not user_role:
         raise HTTPException(status_code=404, detail="Manager role not found")
+    
+    # Generate a temporary password for the manager (can also be customized or provided by the user)
+     # This should be a secure random password
     hashed_password = pwd_context.hash(manager.password)
+    
     # Create a new user associated with the manager
     new_user = User(
         name=manager.name,
         email=manager.email,
         password_hash=hashed_password,  # Hash the password before saving in production
         role_id=user_role.id,
-        
-        organization_id=manager.organization_id,  # Associate the manager_id with user
+        organization_id=organization_id,  # Associate the manager_id with user
     )
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
 
+    # Send the email with login credentials
+    send_manager_email(manager.email, manager.name, manager.password)
+
     # Return the created manager
     return new_manager
 
+
+def send_manager_email(manager_email: str, manager_name: str, password: str):
+    """Send email with manager's login details."""
+    smtp_server = "smtp.gmail.com"
+    smtp_port = 587
+    EMAIL_USERNAME = "helishah2116@gmail.com"  # Your Gmail address
+    EMAIL_PASSWORD = "lkyr uoby fjql ygka" # Your email app password or SMTP password
+
+    msg = MIMEMultipart()
+    msg['From'] = EMAIL_USERNAME
+    msg['To'] = manager_email
+    msg['Subject'] = "Your Manager Account Credentials"
+
+    body = f"""
+    Hello {manager_name},
+
+    Your account has been created as a Manager in our system. Below are your login details:
+
+    Email: {manager_email}
+    Password: {password}
+
+    Please use these details to log in and manage your organization.
+
+    Thank you!
+    """
+
+    msg.attach(MIMEText(body, 'plain'))
+
+    try:
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(EMAIL_USERNAME, EMAIL_PASSWORD)
+            server.send_message(msg)
+        print(f"Email sent successfully to {manager_email}")
+    except Exception as e:
+        print(f"Error sending email: {e}")
+        raise HTTPException(status_code=500, detail="Failed to send email")
+
 # POST API for creating an organization
+# @router.post("/add/organizations", response_model=OrganizationResponse)
+# def create_organization(current_user:UserDependency,organization: OrganizationCreate, db: Session = Depends(get_db)):
+#     # Check if organization with the same name already exists
+#     existing_organization = db.query(Organization).filter(Organization.name == organization.name).first()
+#     if existing_organization:
+#         raise HTTPException(status_code=400, detail="Organization with this name already exists")
+    
+#     # Create a new organization
+#     new_organization = Organization(**organization.dict())
+#     db.add(new_organization)
+#     db.commit()
+#     db.refresh(new_organization)
+    
+#     return new_organization
 @router.post("/add/organizations", response_model=OrganizationResponse)
-def create_organization(current_user:UserDependency,organization: OrganizationCreate, db: Session = Depends(get_db)):
-    # Check if organization with the same name already exists
+def create_organization_with_manager(
+    current_user: UserDependency,
+    organization: OrganizationCreate,
+    db: Session = Depends(get_db),
+):
+    # Check if an organization with the same name already exists
     existing_organization = db.query(Organization).filter(Organization.name == organization.name).first()
     if existing_organization:
         raise HTTPException(status_code=400, detail="Organization with this name already exists")
@@ -255,7 +334,44 @@ def create_organization(current_user:UserDependency,organization: OrganizationCr
     db.commit()
     db.refresh(new_organization)
     
+    # Check if the 'manager' role exists
+    user_role = db.query(UserRole).filter(UserRole.role == 'manager').first()
+    if not user_role:
+        raise HTTPException(status_code=404, detail="Manager role not found")
+    
+    # Create a default manager for the organization
+    default_password = "Default@1234"  # Set a default password (you can customize this)
+    hashed_password = pwd_context.hash(default_password)
+
+    # Generate default manager details
+    manager_email = f"admin@{organization.name.lower().replace(' ', '')}.com"
+    new_manager = Manager(
+        name=f"Admin {organization.name}",
+        email=manager_email,
+        organization_id=new_organization.id,
+    )
+    db.add(new_manager)
+    db.commit()
+    db.refresh(new_manager)
+
+    # Create the manager as a user in the User table
+    new_user = User(
+        name=new_manager.name,
+        email=new_manager.email,
+        password_hash=hashed_password,
+        role_id=user_role.id,
+        organization_id=new_organization.id,
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+
+    # Optionally send an email with login credentials to the manager
+    
+
     return new_organization
+
+
 
 
 
@@ -340,7 +456,7 @@ def create_employee_and_send_email(
     db.refresh(new_employee)
 
     # Send email with the form link
-    # form_link = f"https://yourfrontend.com/complete-registration?token={form_token}"
+    # form_link = f"http://localhost:3001/complete-registration?token={form_token}"
     form_link = f"http://activate-hrm.s3-website-ap-southeast-2.amazonaws.com/complete-registration?token={form_token}"
     email_subject = "Complete Your Employee Registration"
     email_body = f"""
@@ -356,7 +472,80 @@ def create_employee_and_send_email(
     send_registration_email(employee.name,employee.email,form_token)
 
     return new_employee
+@router.post("/resendEmail/{user_id}", response_model=NewEmployeeResponse)
+def create_employee_and_send_email(
+    current_manager:UserDependency,  # Current manager dependency
+    user_id:int,
+    db: Session = Depends(get_db),
+):
+    # Get the manager using the manager_id
+    
+    # Check if manager exists
+   
+    # Check if employee already exists
+    existing_employee = db.query(User).filter(User.id == user_id).first()
+    
+    # Generate a unique token for the form link
+    form_token = create_jwt_token({"email": existing_employee.email})
+    print("previopus toke",form_token)
+    # Add employee record with status `pending`
 
+    # Send email with the form link
+    # form_link = f"http://localhost:3001/resend-email?token={form_token}"
+    form_link = f"http://activate-hrm.s3-website-ap-southeast-2.amazonaws.com/resend-email?token={form_token}"
+    email_subject = "Complete Your Employee Profile"
+    email_body = f"""
+    Hello,
+
+    Your manager has invited you to join the organization. Please complete your registration by clicking the link below:
+
+    {form_link}
+
+    Thank you!
+    """
+    import smtplib
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+    from email.mime.base import MIMEBase
+    from email import encoders
+    
+
+    # Email configuration
+    smtp_server = "smtp.gmail.com"
+    smtp_port = 587
+    EMAIL_USERNAME = "helishah2116@gmail.com"  # Your Gmail address
+    EMAIL_PASSWORD = "lkyr uoby fjql ygka"  # Your app password
+
+    # Create the email message
+    msg = MIMEMultipart()
+    msg['From'] = EMAIL_USERNAME
+    msg['To'] = existing_employee.email
+    msg['Subject'] = email_subject
+
+    # Attach the body
+    msg.attach(MIMEText(email_body, 'plain'))
+
+    # Attach the file from the URL if provided
+    
+
+    # Sending the email
+    try:
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(EMAIL_USERNAME, EMAIL_PASSWORD)  # Correct username and password
+            server.send_message(msg)
+        print(f"Email sent successfully to {existing_employee.email}")
+        return {
+            "message": "Email sent successfully",
+            "user_id": existing_employee.id,
+            "email": existing_employee.email,
+            "name": existing_employee.name,
+        }
+    except Exception as e:
+        print(f"Error sending email: {e}")
+        return False
+
+    
 
 import smtplib
 from email.mime.multipart import MIMEMultipart
@@ -366,9 +555,9 @@ from smtplib import SMTP
 def send_registration_email(employee_name: str, employee_email: str,form_token: str):
     """Send registration email to the employee."""
     # Construct the form link
-    print("form",form_token)
-    form_link = f"https:/http://localhost:3001/complete-registration?token={form_token}"
-
+    # print("form",form_token)
+    # form_link = f"https:/http://localhost:3001/complete-registration?token={form_token}"
+    form_link = f"http://activate-hrm.s3-website-ap-southeast-2.amazonaws.com/complete-registration?token={form_token}"
     # Email content
     print(f"Recipient email: {employee_email}")
     email_subject = "Complete Your Employee Registration"
@@ -445,14 +634,36 @@ def complete_registration(
     # Hash password and update user details
     hashed_password = pwd_context.hash(request.password)
     user.password_hash = hashed_password
-    user.job_title = request.job_title
-    user.purpose = request.purpose
+    user.job_title = request.job_title if request.job_title else None
+    user.purpose = request.purpose if request.purpose else None
     user.verification_code = None  # Remove token after completion
     user.active = True  # Mark the user as active
     db.commit()
 
     # Return the response model with a success message
     return LinkRegistrationResponse(message="Registration completed successfully!")
+@router.put("/update-user-details", response_model=LinkRegistrationResponse)
+def update_user_details(
+    request: updateDetails,
+    db: Session = Depends(get_db),
+):
+    # Get user by token (this assumes you pass user_id in the payload)
+    payload = verify_jwt_token(request.token)
+    email = payload.get("email")
+    if not email:
+        raise HTTPException(status_code=400, detail="Invalid token payload")
+    
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Update the fields if provided
+    user.job_title = request.job_title if request.job_title else user.job_title
+    user.purpose = request.purpose if request.purpose else user.purpose
+    db.commit()
+
+    return {"message": "User details updated successfully!"}
+
 @router.get("/organizations/{org_id}/managers", response_model=List[ManagerResponse])
 def get_managers_by_organization(org_id: int, db: Session = Depends(get_db)):
     # Query to fetch managers for a given organization
