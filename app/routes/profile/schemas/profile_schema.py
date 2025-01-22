@@ -124,11 +124,13 @@ class updateDetails(BaseModel):
     purpose: Optional[str] 
 
 class NewEmployeeResponse(BaseModel):
+    email: str
+    name: str
+class resendEmailResponse(BaseModel):
     message: str
     user_id: int
     email: str
     name: str
-
 
 
 class RegistrationReq(BaseModel):

@@ -10,7 +10,7 @@ from database import get_db
 from models.users import User, UserRole
 from passlib.context import CryptContext
 from models.profile import *
-from routes.profile.schemas.profile_schema import CurrentUserInfoResponse, EmployeeCreate,EmployeeCreateresponse,EmployeeResponseForUpdate,EmployeeResponse, LinkRegistrationResponse,ManagerResponse, NewEmployeeCreate, NewEmployeeResponse,OrganizationResponse,ManagerCreate,OrganizationCreate, RegistrationReq, ResendEmail, updateDetails
+from routes.profile.schemas.profile_schema import CurrentUserInfoResponse, EmployeeCreate,EmployeeCreateresponse,EmployeeResponseForUpdate,EmployeeResponse, LinkRegistrationResponse,ManagerResponse, NewEmployeeCreate, NewEmployeeResponse,OrganizationResponse,ManagerCreate,OrganizationCreate, RegistrationReq, ResendEmail, resendEmailResponse, updateDetails
 from controller.utils.current_user import get_current_user
 router = APIRouter()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -472,7 +472,7 @@ def create_employee_and_send_email(
     send_registration_email(employee.name,employee.email,form_token)
 
     return new_employee
-@router.post("/resendEmail/{user_id}", response_model=NewEmployeeResponse)
+@router.post("/resendEmail/{user_id}", response_model=resendEmailResponse)
 def create_employee_and_send_email(
     current_manager:UserDependency,  # Current manager dependency
     user_id:int,
