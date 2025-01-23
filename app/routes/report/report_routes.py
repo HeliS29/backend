@@ -199,7 +199,7 @@ s3_client = boto3.client('s3',
                          region_name=S3_REGION)  # Define your upload folder path
 
 @router.post("/reports", response_model=ReportResponse)
-def create_report(current_user:UserDependency,user_id: int = Form(...),manager_id: int = Form(...), role: str = Form(...), file: str=Form(...), db: Session = Depends(get_db)):
+def create_report(user_id: int = Form(...),manager_id: int = Form(...), role: str = Form(...), file: str=Form(...), db: Session = Depends(get_db)):
     # Ensure upload directory exists
     # os.makedirs(UPLOAD_FOLDER, exist_ok=True)
     if role not in ["employee", "manager"]:
@@ -420,7 +420,7 @@ def create_report_notification(report, role, is_new_version,db):
 
 
 @router.get("/reports/{user_id}/versions", response_model=List[ReportVersionResponse])
-def get_report_versions(current_user:UserDependency,
+def get_report_versions(
     user_id: int,
     db: Session = Depends(get_db)
 ):

@@ -17,7 +17,7 @@ router = APIRouter()
 
 UserDependency = Annotated[dict, Depends(get_current_user)]
 @router.post("/core_focus_areas/", response_model=List[CoreFocusAreaResponse])
-def create_core_focus_area(current_user: UserDependency,core_focus_area: List[CoreFocusAreaCreate], db: Session = Depends(get_db)):
+def create_core_focus_area(core_focus_area: List[CoreFocusAreaCreate], db: Session = Depends(get_db)):
     # Delete existing records for the same user_ids
     user_ids = [data.user_id for data in core_focus_area]
     db.query(CoreFocusArea).filter(CoreFocusArea.user_id.in_(user_ids)).delete(synchronize_session=False)
@@ -47,7 +47,7 @@ def create_core_focus_area(current_user: UserDependency,core_focus_area: List[Co
 
 
 @router.put("/core_focus_areas/{user_id}", response_model=List[CoreFocusAreaUpdate])
-def update_core_focus_area(current_user: UserDependency,user_id: int, core_focus_area: List[CoreFocusAreaUpdate], db: Session = Depends(get_db)):
+def update_core_focus_area(user_id: int, core_focus_area: List[CoreFocusAreaUpdate], db: Session = Depends(get_db)):
     # Fetch all CoreFocusArea records for the given user
     db_core_focus_areas = db.query(CoreFocusArea).filter(CoreFocusArea.user_id == user_id).all()
     
@@ -78,7 +78,7 @@ def update_core_focus_area(current_user: UserDependency,user_id: int, core_focus
     return db_core_focus_areas
 
 @router.get("/core_focus_areas/{user_id}", response_model=List[CoreFocusAreaCreate])
-def read_core_focus_areas_by_user_id(current_user: UserDependency,user_id: int, skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
+def read_core_focus_areas_by_user_id(user_id: int, skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
     core_focus_areas = db.query(CoreFocusArea).filter(CoreFocusArea.user_id == user_id).offset(skip).limit(limit).all()
     if not core_focus_areas:
         raise HTTPException(status_code=404, detail="Core Focus Areas not found")
@@ -87,7 +87,7 @@ def read_core_focus_areas_by_user_id(current_user: UserDependency,user_id: int, 
 
 
 @router.get("/core_focus_areas/time_spent/{user_id}", response_model=List[Dict[str, Any]])
-def get_time_spent(current_user: UserDependency,user_id: int, db: Session = Depends(get_db)):
+def get_time_spent(user_id: int, db: Session = Depends(get_db)):
     core_focus_areas = db.query(CoreFocusArea).filter(CoreFocusArea.user_id == user_id).all()
    
     result = [
@@ -98,7 +98,7 @@ def get_time_spent(current_user: UserDependency,user_id: int, db: Session = Depe
     return result
 
 @router.get("/core_focus_areas/importance/{user_id}", response_model=List[Dict[str, Any]])
-def get_importance(current_user: UserDependency,user_id: int, db: Session = Depends(get_db)):
+def get_importance(user_id: int, db: Session = Depends(get_db)):
     core_focus_areas = db.query(CoreFocusArea).filter(CoreFocusArea.user_id == user_id).all()
    
     result = [
