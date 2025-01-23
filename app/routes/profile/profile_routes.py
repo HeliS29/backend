@@ -500,8 +500,8 @@ def create_employee_and_send_email(
     # Send email with the form link
     # form_link = f"http://localhost:3001/user_details-stepss/{existing_employee.id}"
     # form_link = f"http://localhost:3001/user_details-stepss/{form_token}"
-    form_link = f"http://activate-hrm.s3-website-ap-southeast-2.amazonaws.com/user_details-stepss/{existing_employee.id}"
-    # form_link = f"http://activate-hrm.s3-website-ap-southeast-2.amazonaws.com/user_details-stepss/{form_token}"
+    # form_link = f"http://activate-hrm.s3-website-ap-southeast-2.amazonaws.com/user_details-stepss/{existing_employee.id}"
+    form_link = f"http://activate-hrm.s3-website-ap-southeast-2.amazonaws.com/user_details-stepss/{form_token}"
     email_subject = "Complete Your Employee Profile"
     email_body = f"""
     Hello,
