@@ -111,7 +111,7 @@ def update_employee_profile(
 def get_current_user_info(
     user_id: int,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)  # Assuming this gives you the current logged-in user
+     # Assuming this gives you the current logged-in user
 ):
     # Fetch the user and their associated organization
     user = db.query(User).filter(User.id == user_id).first()
@@ -500,8 +500,8 @@ def create_employee_and_send_email(
     # Send email with the form link
     # form_link = f"http://localhost:3001/user_details-stepss/{existing_employee.id}"
     # form_link = f"http://localhost:3001/user_details-stepss/{form_token}"
-    # form_link = f"http://activate-hrm.s3-website-ap-southeast-2.amazonaws.com/user_details-stepss/{existing_employee.id}"
-    form_link = f"http://activate-hrm.s3-website-ap-southeast-2.amazonaws.com/user_details-stepss/{form_token}"
+    form_link = f"http://activate-hrm.s3-website-ap-southeast-2.amazonaws.com/user_details-stepss/{existing_employee.id}"
+    # form_link = f"http://activate-hrm.s3-website-ap-southeast-2.amazonaws.com/user_details-stepss/{form_token}"
     email_subject = "Complete Your Employee Profile"
     email_body = f"""
     Hello,

@@ -16,7 +16,7 @@ router = APIRouter()
 
 UserDependency = Annotated[dict, Depends(get_current_user)]
 @router.post("/critical_activities/", response_model=List[CriticalActivityResponse])
-def create_critical_activity(current_user:UserDependency,
+def create_critical_activity(
     critical_activity: List[CriticalActivityCreate], db: Session = Depends(get_db)
 ):
     # Extract unique user IDs from the input data
@@ -46,12 +46,12 @@ def create_critical_activity(current_user:UserDependency,
 
 
 @router.get("/critical_activities/", response_model=List[CriticalActivityResponse])
-def get_all_critical_activities(current_user:UserDependency,db: Session = Depends(get_db)):
+def get_all_critical_activities(db: Session = Depends(get_db)):
     activities = db.query(CriticalActivities).all()
     return activities
 
 @router.get("/critical_activities/user/{user_id}", response_model=List[CriticalActivityResponse])
-def get_critical_activities_by_user(current_user:UserDependency,user_id: int, db: Session = Depends(get_db)):
+def get_critical_activities_by_user(user_id: int, db: Session = Depends(get_db)):
     activities = db.query(CriticalActivities).filter(CriticalActivities.user_id == user_id).all()
     if not activities:
         raise HTTPException(status_code=404, detail="No critical activities found for this user")
@@ -61,7 +61,7 @@ from typing import List
 
 @router.put("/critical_activities/{user_id}", response_model=List[CriticalActivityResponse])
 def update_critical_activities(
-    current_user:UserDependency,
+ 
     user_id: int, 
     activities_update: List[CriticalActivityUpdate], 
     db: Session = Depends(get_db)
@@ -96,7 +96,7 @@ def update_critical_activities(
 
 
 @router.get("/user_details/{user_id}", response_model=Dict[str, Any])
-def get_user_details(current_user:UserDependency,user_id: int, db: Session = Depends(get_db)):
+def get_user_details(user_id: int, db: Session = Depends(get_db)):
     # Fetch critical activities based on user_id
     critical_activities = (
         db.query(CriticalActivities)

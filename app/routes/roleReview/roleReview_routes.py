@@ -21,7 +21,7 @@ UserDependency = Annotated[dict, Depends(get_current_user)]
 
 
 @router.post("/role-review", response_model=RoleReviewResponse)
-def create_or_update_review(current_user: UserDependency,role_review: RoleReviewCreate, db: Session = Depends(get_db)):
+def create_or_update_review(role_review: RoleReviewCreate, db: Session = Depends(get_db)):
     # Fetch existing reviews for the user
     if len(role_review.job_summary) > 1000:
         raise HTTPException(
@@ -70,7 +70,7 @@ def create_or_update_review(current_user: UserDependency,role_review: RoleReview
 
 # Get Role Reviews by Employee ID
 @router.get("/role-review/{employee_id}", response_model=list[RoleReviewResponse])
-def get_reviews(current_user: UserDependency,employee_id: int, db: Session = Depends(get_db)):
+def get_reviews(employee_id: int, db: Session = Depends(get_db)):
     reviews = get_role_reviews_by_employee(db, employee_id)
     if not reviews:
         raise HTTPException(status_code=404, detail="No role reviews found for this employee")
@@ -78,7 +78,7 @@ def get_reviews(current_user: UserDependency,employee_id: int, db: Session = Dep
 
 # Update Role Review
 @router.put("/role-review/{user_id}", response_model=RoleReviewResponse)
-def update_review(current_user: UserDependency,user_id: int, role_review: RoleReviewUpdate, db: Session = Depends(get_db)):
+def update_review(user_id: int, role_review: RoleReviewUpdate, db: Session = Depends(get_db)):
     updated_review = update_role_review(db, user_id, role_review)
     if not updated_review:
         raise HTTPException(status_code=404, detail="Role review not found")
