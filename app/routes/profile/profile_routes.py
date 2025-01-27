@@ -511,10 +511,10 @@ def create_employee_and_send_email(
     send_registration_email(employee.name,employee.email,form_token)
     new_email = EmailQueue(
             recipient_id=existing_employee.id,
-            recipient_type="employee",
+            recipient_type="user",
             subject=email_subject,
             body=email_body,
-            sent_at=datetime.utcnow()
+            sent_at=datetime.now()
         )
     db.add(new_email)
     db.commit()
@@ -586,6 +586,16 @@ def create_employee_and_send_email(
             server.login(EMAIL_USERNAME, EMAIL_PASSWORD)  # Correct username and password
             server.send_message(msg)
         print(f"Email sent successfully to {existing_employee.email}")
+        new_email = EmailQueue(
+            recipient_id=existing_employee.id,
+            recipient_type="user",
+            subject=email_subject,
+            body=email_body,
+            sent_at=datetime.now()
+        )
+        db.add(new_email)
+        db.commit()
+        db.refresh(new_email)
         
         return {
             "message": "Email sent successfully",
@@ -659,7 +669,7 @@ def send_registration_email(employee_name: str, employee_email: str,form_token: 
         print(f"Email sent successfully to {employee_email}")
         new_email = EmailQueue(
             recipient_id=employee_name,  # You can use employee ID instead if needed
-            recipient_type="employee",
+            recipient_type="user",
             subject=email_subject,
             body=email_body,
             sent_at=datetime.utcnow()
