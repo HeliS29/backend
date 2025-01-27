@@ -238,7 +238,7 @@ def create_report(user_id: int = Form(...),manager_id: int = Form(...), role: st
                 current_version_id=existing_report.current_version_id,
                 created_at=existing_report.created_at,
                 updated_at=existing_report.updated_at,
-                detail="You can only have up to 3 versions of a report. Please subscribe for additional versions."
+                detail="You can only have up to 4 versions of a report. Please subscribe for additional versions."
             )
         # Increment the version number for the existing report
         last_version = (
