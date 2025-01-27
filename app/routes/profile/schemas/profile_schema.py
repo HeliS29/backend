@@ -102,7 +102,9 @@ class OrganizationResponse(BaseModel):
 #     class Config:
 #         from_attributes = True
 
-
+class OrganizationNameResponse(BaseModel):
+    organization_name: str
+    
 class OrganizationCreate(BaseModel):
     organization_name: str
     manager_email:EmailStr

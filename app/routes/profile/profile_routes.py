@@ -2,6 +2,8 @@
 from smtplib import SMTP
 from typing import Annotated, List
 from fastapi import APIRouter, Body, Depends, HTTPException,status
+from fastapi.responses import JSONResponse
+from models.emailQueue import EmailQueue
 from controller.auth import create_jwt_token, verify_jwt_token
 from routes.emailRequest.emailRequest import send_email
 from routes.auth.schemas.auth_schema import UserResponse
@@ -10,7 +12,7 @@ from database import get_db
 from models.users import User, UserRole
 from passlib.context import CryptContext
 from models.profile import *
-from routes.profile.schemas.profile_schema import CurrentUserInfoResponse, EmployeeCreate,EmployeeCreateresponse,EmployeeResponseForUpdate,EmployeeResponse, LinkRegistrationResponse,ManagerResponse, NewEmployeeCreate, NewEmployeeResponse,OrganizationResponse,ManagerCreate,OrganizationCreate, RegistrationReq, ResendEmail, resendEmailResponse, updateDetails
+from routes.profile.schemas.profile_schema import CurrentUserInfoResponse, EmployeeCreate,EmployeeCreateresponse,EmployeeResponseForUpdate,EmployeeResponse, LinkRegistrationResponse,ManagerResponse, NewEmployeeCreate, NewEmployeeResponse, OrganizationNameResponse,OrganizationResponse,ManagerCreate,OrganizationCreate, RegistrationReq, ResendEmail, resendEmailResponse, updateDetails
 from controller.utils.current_user import get_current_user
 router = APIRouter()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -225,7 +227,7 @@ def create_manager(current_user: UserDependency, manager: ManagerCreate, db: Ses
     # Check if manager with the same email already exists in the same organization
     existing_manager = db.query(Manager).filter(Manager.email == manager.email, Manager.organization_id == organization_id).first()
     if existing_manager:
-        raise HTTPException(status_code=400, detail="Manager with this email already exists in this organization")
+        raise JSONResponse(status_code=400, detail="Manager with this email already exists in this organization")
 
     # Create the new manager in the Manager table
     new_manager = Manager(
@@ -300,6 +302,16 @@ def send_manager_email(manager_email: str, manager_name: str, password: str):
             server.login(EMAIL_USERNAME, EMAIL_PASSWORD)
             server.send_message(msg)
         print(f"Email sent successfully to {manager_email}")
+        new_email = EmailQueue(
+            recipient_id=manager_name,  # You can replace this with the actual manager ID if needed
+            recipient_type="manager",
+            subject="Your Manager Account Credentials",
+            body=body,
+            sent_at=datetime.utcnow()
+        )
+        db.add(new_email)
+        db.commit()
+        db.refresh(new_email)
     except Exception as e:
         print(f"Error sending email: {e}")
         raise HTTPException(status_code=500, detail="Failed to send email")
@@ -332,7 +344,8 @@ def create_organization_with_manager(
     # Check if an organization with the same name already exists
     existing_organization = db.query(Organization).filter(Organization.name == organization.organization_name).first()
     if existing_organization:
-        raise HTTPException(status_code=400, detail="Organization with this name already exists")
+        # raise HTTPException(status_code=400, detail="Organization with this name already exists")
+        return JSONResponse(status_code=400, content={"message": "Organization with this name already exists"})
 
     # Create a new organization
     new_organization = Organization(name=organization.organization_name)
@@ -349,7 +362,8 @@ def create_organization_with_manager(
     existing_manager = db.query(Manager).filter(Manager.email == organization.manager_email, Manager.organization_id == new_organization.id).first()
     print("existing_manager",existing_manager)
     if existing_manager:
-        raise HTTPException(status_code=400, detail="A manager with this email already exists in the same organization")
+        # raise HTTPException(status_code=400, detail="A manager with this email already exists in the same organization")
+        return JSONResponse(status_code=400, content={"message": "A manager with this email already exists in the same organization"})
 
     # Hash the provided manager password
     hashed_password = pwd_context.hash(organization.manager_password)
@@ -379,7 +393,25 @@ def create_organization_with_manager(
     return new_organization
 
 
-
+@router.get("/get-organization-name", response_model=OrganizationNameResponse)
+def get_organization_name(current_user:UserDependency, db: Session = Depends(get_db)):
+    """
+    Get organization name based on manager's id.
+    """
+    manager_id=current_user['manager_id']
+    # Fetch the manager from the database
+    manager = db.query(Manager).filter(Manager.id == manager_id).first()
+    
+    if not manager:
+        raise HTTPException(status_code=404, detail="Manager not found")
+    
+    # Fetch the associated organization using the organization_id from the manager
+    organization = db.query(Organization).filter(Organization.id == manager.organization_id).first()
+    
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
+    
+    return {"organization_name": organization.name}
 
 
 # @router.post("/add/employee", response_model=NewEmployeeResponse)
@@ -477,6 +509,16 @@ def create_employee_and_send_email(
     """
     print(employee.email)
     send_registration_email(employee.name,employee.email,form_token)
+    new_email = EmailQueue(
+            recipient_id=existing_employee.id,
+            recipient_type="employee",
+            subject=email_subject,
+            body=email_body,
+            sent_at=datetime.utcnow()
+        )
+    db.add(new_email)
+    db.commit()
+    db.refresh(new_email)
 
     return new_employee
 @router.post("/resendEmail/{user_id}", response_model=resendEmailResponse)
@@ -544,6 +586,7 @@ def create_employee_and_send_email(
             server.login(EMAIL_USERNAME, EMAIL_PASSWORD)  # Correct username and password
             server.send_message(msg)
         print(f"Email sent successfully to {existing_employee.email}")
+        
         return {
             "message": "Email sent successfully",
             "user_id": existing_employee.id,
@@ -561,7 +604,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from smtplib import SMTP
 
-def send_registration_email(employee_name: str, employee_email: str,form_token: str):
+def send_registration_email(employee_name: str, employee_email: str,form_token: str,db: Session = Depends(get_db),):
     """Send registration email to the employee."""
     # Construct the form link
     # print("form",form_token)
@@ -614,6 +657,16 @@ def send_registration_email(employee_name: str, employee_email: str,form_token: 
             server.login(EMAIL_USERNAME, EMAIL_PASSWORD)  # Correct username and password
             server.send_message(msg)
         print(f"Email sent successfully to {employee_email}")
+        new_email = EmailQueue(
+            recipient_id=employee_name,  # You can use employee ID instead if needed
+            recipient_type="employee",
+            subject=email_subject,
+            body=email_body,
+            sent_at=datetime.utcnow()
+        )
+        db.add(new_email)
+        db.commit()
+        db.refresh(new_email)
         return True
     except Exception as e:
         print(f"Error sending email: {e}")
