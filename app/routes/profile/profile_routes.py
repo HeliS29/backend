@@ -548,7 +548,7 @@ def create_employee_and_send_email(
     email_body = f"""
     Hello,
 
-    Your manager has invited you to join the organization. Please complete your registration by clicking the link below:
+    Your manager has invited you to join the organization. Please add your RoleReview details by clicking the link below:
 
     {form_link}
 
