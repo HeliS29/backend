@@ -302,16 +302,16 @@ def send_manager_email(manager_email: str, manager_name: str, password: str):
             server.login(EMAIL_USERNAME, EMAIL_PASSWORD)
             server.send_message(msg)
         print(f"Email sent successfully to {manager_email}")
-        new_email = EmailQueue(
-            recipient_id=manager_name,  # You can replace this with the actual manager ID if needed
-            recipient_type="manager",
-            subject="Your Manager Account Credentials",
-            body=body,
-            sent_at=datetime.utcnow()
-        )
-        db.add(new_email)
-        db.commit()
-        db.refresh(new_email)
+        # new_email = EmailQueue(
+        #     recipient_id=manager_name,  # You can replace this with the actual manager ID if needed
+        #     recipient_type="manager",
+        #     subject="Your Manager Account Credentials",
+        #     body=body,
+        #     sent_at=datetime.utcnow()
+        # )
+        # db.add(new_email)
+        # db.commit()
+        # db.refresh(new_email)
     except Exception as e:
         print(f"Error sending email: {e}")
         raise HTTPException(status_code=500, detail="Failed to send email")
