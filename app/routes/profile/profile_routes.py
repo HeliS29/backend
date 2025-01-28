@@ -302,16 +302,16 @@ def send_manager_email(manager_email: str, manager_name: str, password: str):
             server.login(EMAIL_USERNAME, EMAIL_PASSWORD)
             server.send_message(msg)
         print(f"Email sent successfully to {manager_email}")
-        new_email = EmailQueue(
-            recipient_id=manager_name,  # You can replace this with the actual manager ID if needed
-            recipient_type="manager",
-            subject="Your Manager Account Credentials",
-            body=body,
-            sent_at=datetime.utcnow()
-        )
-        db.add(new_email)
-        db.commit()
-        db.refresh(new_email)
+        # new_email = EmailQueue(
+        #     recipient_id=manager_name,  # You can replace this with the actual manager ID if needed
+        #     recipient_type="manager",
+        #     subject="Your Manager Account Credentials",
+        #     body=body,
+        #     sent_at=datetime.utcnow()
+        # )
+        # db.add(new_email)
+        # db.commit()
+        # db.refresh(new_email)
     except Exception as e:
         print(f"Error sending email: {e}")
         raise HTTPException(status_code=500, detail="Failed to send email")
@@ -511,10 +511,10 @@ def create_employee_and_send_email(
     send_registration_email(employee.name,employee.email,form_token)
     new_email = EmailQueue(
             recipient_id=existing_employee.id,
-            recipient_type="employee",
+            recipient_type="user",
             subject=email_subject,
             body=email_body,
-            sent_at=datetime.utcnow()
+            sent_at=datetime.now()
         )
     db.add(new_email)
     db.commit()
@@ -548,7 +548,7 @@ def create_employee_and_send_email(
     email_body = f"""
     Hello,
 
-    Your manager has invited you to join the organization. Please complete your registration by clicking the link below:
+    Your manager has invited you to join the organization. Please add your RoleReview details by clicking the link below:
 
     {form_link}
 
@@ -586,6 +586,16 @@ def create_employee_and_send_email(
             server.login(EMAIL_USERNAME, EMAIL_PASSWORD)  # Correct username and password
             server.send_message(msg)
         print(f"Email sent successfully to {existing_employee.email}")
+        new_email = EmailQueue(
+            recipient_id=existing_employee.id,
+            recipient_type="user",
+            subject=email_subject,
+            body=email_body,
+            sent_at=datetime.now()
+        )
+        db.add(new_email)
+        db.commit()
+        db.refresh(new_email)
         
         return {
             "message": "Email sent successfully",
@@ -659,7 +669,7 @@ def send_registration_email(employee_name: str, employee_email: str,form_token: 
         print(f"Email sent successfully to {employee_email}")
         new_email = EmailQueue(
             recipient_id=employee_name,  # You can use employee ID instead if needed
-            recipient_type="employee",
+            recipient_type="user",
             subject=email_subject,
             body=email_body,
             sent_at=datetime.utcnow()
