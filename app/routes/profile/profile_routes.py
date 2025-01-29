@@ -474,7 +474,8 @@ def create_employee_and_send_email(
     # Check if employee already exists
     existing_employee = db.query(User).filter(User.email == employee.email).first()
     if existing_employee:
-        raise HTTPException(status_code=400, detail="Employee with this email already exists")
+        # raise HTTPException(status_code=400, detail="Employee with this email already exists")
+        return JSONResponse(status_code=400, content={"message": "Employee with this email already exists"})
 
     # Generate a unique token for the form link
     form_token = create_jwt_token({"email": employee.email})
@@ -509,17 +510,6 @@ def create_employee_and_send_email(
     """
     print(employee.email)
     send_registration_email(employee.name,employee.email,form_token)
-    new_email = EmailQueue(
-            recipient_id=existing_employee.id,
-            recipient_type="user",
-            subject=email_subject,
-            body=email_body,
-            sent_at=datetime.now()
-        )
-    db.add(new_email)
-    db.commit()
-    db.refresh(new_email)
-
     return new_employee
 @router.post("/resendEmail/{user_id}", response_model=resendEmailResponse)
 def create_employee_and_send_email(
