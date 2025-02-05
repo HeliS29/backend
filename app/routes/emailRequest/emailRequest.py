@@ -32,7 +32,6 @@ UserDependency = Annotated[dict, Depends(get_current_user)]
 
 
 
-
 @router.post("/send-email")
 def send_email(current_user:UserDependency,request: EmailRequest, db: Session = Depends(get_db)):
     # Fetch user and manager email
