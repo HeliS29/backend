@@ -1,4 +1,4 @@
-from typing import Any, Dict, Text
+from typing import Any, Dict, Optional, Text
 from pydantic import BaseModel,model_validator,Field,constr
 from datetime import datetime
 
@@ -53,3 +53,35 @@ class RoleReviewResponse(BaseModel):
 
 
 
+
+
+class WorkDataAdd(BaseModel):
+    work_description: str
+    hours_per_month: int
+    rows: str  # Store rows as JSON string
+    comments: Optional[str] = None  # Optional comments for each entry
+
+    class Config:
+        orm_mode = True
+class SubmitWorkRequest(BaseModel):
+    user_id: int
+    work_data: list[WorkDataAdd]
+    comments: Optional[str] = None  # Optional comments for the work
+
+    class Config:
+        orm_mode = True
+        
+
+
+class WorkDataResponse(BaseModel):
+    work_description: str
+    hours_per_month: int
+     # Optional for each work entry
+
+class WorkDataWithCommentsResponse(BaseModel):
+    user_id: int
+    work_data: list[WorkDataResponse]
+    comments: Optional[str] = None  # Shared comment for the user
+
+    class Config:
+        orm_mode = True

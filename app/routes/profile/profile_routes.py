@@ -255,6 +255,7 @@ def create_manager(current_user: UserDependency, manager: ManagerCreate, db: Ses
         email=manager.email,
         password_hash=hashed_password,  # Hash the password before saving in production
         role_id=user_role.id,
+        job_title=manager.job_title,
         organization_id=organization_id,
         manager_id=current_user_id,  # Associate the manager_id with user
     )
@@ -484,6 +485,7 @@ def create_employee_and_send_email(
     new_employee = User(
         name=employee.name,
         email=employee.email,
+        job_title=employee.job_title,
         role_id=db.query(UserRole).filter(UserRole.role == "employee").first().id,
         organization_id=manager.organization_id,
         manager_id=manager.id,
@@ -696,8 +698,8 @@ def complete_registration(
     # Hash password and update user details
     hashed_password = pwd_context.hash(request.password)
     user.password_hash = hashed_password
-    user.job_title = request.job_title if request.job_title else None
-    user.purpose = request.purpose if request.purpose else None
+    # user.job_title = request.job_title if request.job_title else None
+    # user.purpose = request.purpose if request.purpose else None
     user.verification_code = None  # Remove token after completion
     user.active = True  # Mark the user as active
     db.commit()

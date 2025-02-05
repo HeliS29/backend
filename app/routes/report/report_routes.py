@@ -418,7 +418,33 @@ def create_report_notification(report, role, is_new_version,db):
     return notification
 
 
-
+@router.get("/users/{user_id}/reports/current-version")
+def get_current_report_version(user_id: int, db: Session = Depends(get_db)):
+    # Fetch report by user_id
+    report = db.query(Report).filter(Report.user_id == user_id).first()
+    if not report:
+        raise HTTPException(status_code=404, detail="No report found for this user")
+    
+    # Fetch latest version for the found report
+    latest_version = (
+        db.query(ReportVersion)
+        .filter(ReportVersion.report_id == report.id)
+        .order_by(ReportVersion.version_number.desc())
+        .first()
+    )
+    
+    if not latest_version:
+        raise HTTPException(status_code=404, detail="No version found for this report")
+    
+    return {
+        "user_id": user_id,
+        "report_id": report.id,
+        "current_version_id": latest_version.id,
+        "version_number": latest_version.version_number,
+        "pdf_path": latest_version.pdf_path,
+        "generated_at": latest_version.generated_at,
+        "manager_comments": latest_version.manager_comments
+    }
 @router.get("/reports/{user_id}/versions", response_model=List[ReportVersionResponse])
 def get_report_versions(
     user_id: int,
@@ -445,3 +471,26 @@ def get_report_versions(
 
     return report_versions
 
+
+
+@router.get("/report/{user_id}/get-current-versionNumber")
+def get_report_version(user_id: int, db: Session = Depends(get_db)):
+    # Fetch the report for the given user_id
+    report = db.query(Report).filter(Report.user_id == user_id).first()
+
+    if not report:
+        # If no report is found, assume version 1
+        return {"current_version": 1}
+
+    # Fetch the latest version from ReportVersion
+    latest_version = (
+        db.query(ReportVersion)
+        .filter(ReportVersion.report_id == report.id)
+        .order_by(ReportVersion.version_number.desc())
+        .first()
+    )
+
+    # Determine the current version number
+    current_version = latest_version.version_number + 1 if latest_version else 1
+
+    return {"current_version": current_version}

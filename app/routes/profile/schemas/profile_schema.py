@@ -66,7 +66,8 @@ class EmployeeResponseForUpdate(BaseModel):
 class ManagerCreate(BaseModel):
     name: str
     email: str
-    password: str  # Ensure password is hashed in the backend before saving
+    password: str
+    job_title:str  # Ensure password is hashed in the backend before saving
     # organization_id: int  # FK to the Organization table
      # Optional field for phone number
 
@@ -117,6 +118,7 @@ class OrganizationCreate(BaseModel):
 class NewEmployeeCreate(BaseModel):
     name: str
     email: str
+    job_title:str
     # password: str  # In production, make sure to handle password securely
 class ResendEmail(BaseModel):
     name: str
