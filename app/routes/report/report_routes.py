@@ -226,20 +226,20 @@ def create_report(user_id: int = Form(...),manager_id: int = Form(...), role: st
     if existing_report:
         existing_versions_count = db.query(ReportVersion).filter(ReportVersion.report_id == existing_report.id).count()
 
-        if existing_versions_count >= 4:
-            # raise HTTPException(
-            #     status_code=400,
-            #     detail="You can only have up to 3 versions of a report. Please subscribe for additional versions."
-            # )
-            return ReportResponse(
-                id=existing_report.id,
-                user_id=existing_report.user_id,
-                manager_id=existing_report.manager_id,
-                current_version_id=existing_report.current_version_id,
-                created_at=existing_report.created_at,
-                updated_at=existing_report.updated_at,
-                detail="You can only have up to 4 versions of a report. Please subscribe for additional versions."
-            )
+        # if existing_versions_count >= 4:
+        #     # raise HTTPException(
+        #     #     status_code=400,
+        #     #     detail="You can only have up to 3 versions of a report. Please subscribe for additional versions."
+        #     # )
+        #     return ReportResponse(
+        #         id=existing_report.id,
+        #         user_id=existing_report.user_id,
+        #         manager_id=existing_report.manager_id,
+        #         current_version_id=existing_report.current_version_id,
+        #         created_at=existing_report.created_at,
+        #         updated_at=existing_report.updated_at,
+        #         detail="You can only have up to 4 versions of a report. Please subscribe for additional versions."
+        #     )
         # Increment the version number for the existing report
         last_version = (
             db.query(ReportVersion)
@@ -283,6 +283,7 @@ def create_report(user_id: int = Form(...),manager_id: int = Form(...), role: st
             report_id=new_report.id,
             version_number=1,
             pdf_path=file,
+            is_email=False,
               # Use the stored path
         )
         db.add(new_version)

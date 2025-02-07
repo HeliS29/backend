@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, ForeignKey, DateTime,String,Text
+from sqlalchemy import Column, Integer, ForeignKey, DateTime,String,Text,Boolean
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from database import Base
@@ -24,6 +24,7 @@ class ReportVersion(Base):
     generated_at = Column(DateTime, default=func.now())
     pdf_path = Column(String(100), nullable=False)
     manager_comments = Column(Text, nullable=True)
+    is_email = Column(Boolean, default=False)  
 
 
 class ReportContent(Base):
