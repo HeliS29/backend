@@ -283,6 +283,7 @@ def create_report(user_id: int = Form(...),manager_id: int = Form(...), role: st
             report_id=new_report.id,
             version_number=1,
             pdf_path=file,
+            is_email=False,
               # Use the stored path
         )
         db.add(new_version)

@@ -35,6 +35,7 @@ def upgrade() -> None:
         batch_op.create_foreign_key(
             'critical_activities_ibfk_2', 'core_focus_areas', ['core_focus_area_id'], ['id']
         )
+    
 
 
 def downgrade() -> None:
