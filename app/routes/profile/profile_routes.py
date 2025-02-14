@@ -3,6 +3,7 @@ from smtplib import SMTP
 from typing import Annotated, List
 from fastapi import APIRouter, Body, Depends, HTTPException,status
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel, EmailStr
 from models.emailQueue import EmailQueue
 from controller.auth import create_jwt_token, verify_jwt_token
 from routes.emailRequest.emailRequest import send_email
@@ -204,6 +205,71 @@ def get_organizations(db: Session = Depends(get_db),current_user: User = Depends
 
 
 # Create manager API
+# @router.post("/add/managers", response_model=ManagerResponse)
+# def create_manager(current_user: UserDependency, manager: ManagerCreate, db: Session = Depends(get_db)):
+#     # Fetch current logged-in user (assumed that current_user is a dependency containing user info)
+#     print(current_user)
+#     current_user_id = current_user['manager_id']  # Assuming the `UserDependency` includes `id`
+    
+#     # Fetch the manager associated with the current user
+#     current_manager = db.query(Manager).filter(Manager.id == current_user_id).first()
+    
+#     if not current_manager:
+#         raise HTTPException(status_code=404, detail="Manager not found for the current user")
+    
+#     # Get the organization ID of the current manager
+#     organization_id = current_manager.organization_id
+
+#     # Check if the organization exists
+#     organization = db.query(Organization).filter(Organization.id == organization_id).first()
+#     if not organization:
+#         raise HTTPException(status_code=404, detail="Organization not found")
+
+#     # Check if manager with the same email already exists in the same organization
+#     existing_manager = db.query(Manager).filter(Manager.email == manager.email, Manager.organization_id == organization_id).first()
+#     if existing_manager:
+#         raise JSONResponse(status_code=400, detail="Manager with this email already exists in this organization")
+
+#     # Create the new manager in the Manager table
+#     new_manager = Manager(
+#         name=manager.name,
+#         email=manager.email,
+#         organization_id=organization_id, 
+#          # Associate with current manager's organization
+#     )
+#     db.add(new_manager)
+#     db.commit()
+#     db.refresh(new_manager)
+
+#     # Now create the manager in the User table
+#     user_role = db.query(UserRole).filter(UserRole.role == 'manager').first()
+#     if not user_role:
+#         raise HTTPException(status_code=404, detail="Manager role not found")
+    
+#     # Generate a temporary password for the manager (can also be customized or provided by the user)
+#      # This should be a secure random password
+#     hashed_password = pwd_context.hash(manager.password)
+    
+#     # Create a new user associated with the manager
+#     new_user = User(
+#         name=manager.name,
+#         email=manager.email,
+#         password_hash=hashed_password,  # Hash the password before saving in production
+#         role_id=user_role.id,
+#         job_title=manager.job_title,
+#         organization_id=organization_id,
+#         manager_id=current_user_id,  # Associate the manager_id with user
+#     )
+#     db.add(new_user)
+#     db.commit()
+#     db.refresh(new_user)
+
+#     # Send the email with login credentials
+#     send_manager_email(manager.email, manager.name, manager.password)
+
+#     # Return the created manager
+#     return new_manager
+# ----------------------------------------------New-------------------------------
 @router.post("/add/managers", response_model=ManagerResponse)
 def create_manager(current_user: UserDependency, manager: ManagerCreate, db: Session = Depends(get_db)):
     # Fetch current logged-in user (assumed that current_user is a dependency containing user info)
@@ -223,18 +289,17 @@ def create_manager(current_user: UserDependency, manager: ManagerCreate, db: Ses
     organization = db.query(Organization).filter(Organization.id == organization_id).first()
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
-
+    
     # Check if manager with the same email already exists in the same organization
     existing_manager = db.query(Manager).filter(Manager.email == manager.email, Manager.organization_id == organization_id).first()
     if existing_manager:
-        raise JSONResponse(status_code=400, detail="Manager with this email already exists in this organization")
+        return JSONResponse(status_code=400, content={"detail": "Manager with this email already exists in this organization"})
 
     # Create the new manager in the Manager table
     new_manager = Manager(
         name=manager.name,
         email=manager.email,
-        organization_id=organization_id, 
-         # Associate with current manager's organization
+        organization_id=organization_id  # Associate with current manager's organization
     )
     db.add(new_manager)
     db.commit()
@@ -245,15 +310,14 @@ def create_manager(current_user: UserDependency, manager: ManagerCreate, db: Ses
     if not user_role:
         raise HTTPException(status_code=404, detail="Manager role not found")
     
-    # Generate a temporary password for the manager (can also be customized or provided by the user)
-     # This should be a secure random password
+    # Hash the password before saving
     hashed_password = pwd_context.hash(manager.password)
     
     # Create a new user associated with the manager
     new_user = User(
         name=manager.name,
         email=manager.email,
-        password_hash=hashed_password,  # Hash the password before saving in production
+        password_hash=hashed_password,
         role_id=user_role.id,
         job_title=manager.job_title,
         organization_id=organization_id,
@@ -263,14 +327,25 @@ def create_manager(current_user: UserDependency, manager: ManagerCreate, db: Ses
     db.commit()
     db.refresh(new_user)
 
-    # Send the email with login credentials
-    send_manager_email(manager.email, manager.name, manager.password)
+    # Fetch the newly created user's ID
+    existing_employee = db.query(User).filter(User.email == manager.email).first()
+    if not existing_employee:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Generate form token
+    form_token = create_jwt_token({"user_id": existing_employee.id})
+    print("Generated form token:", form_token)
+
+    # Create the form link
+    form_link = f"http://activate-hrm.s3-website-ap-southeast-2.amazonaws.com/user_details-stepss/{form_token}"
+
+    # Send the email with login credentials and form link
+    send_manager_email(manager.email, manager.name, manager.password, form_link)
 
     # Return the created manager
     return new_manager
 
-
-def send_manager_email(manager_email: str, manager_name: str, password: str):
+def send_manager_email(manager_email: str, manager_name: str, password: str, form_link: str):
     """Send email with manager's login details."""
     smtp_server = "smtp.gmail.com"
     smtp_port = 587
@@ -280,19 +355,32 @@ def send_manager_email(manager_email: str, manager_name: str, password: str):
     msg = MIMEMultipart()
     msg['From'] = EMAIL_USERNAME
     msg['To'] = manager_email
-    msg['Subject'] = "Your Manager Account Credentials"
+    msg['Subject'] = "Welcome to Role Review – You have been invited to complete a Role Review Activity"
 
     body = f"""
-    Hello {manager_name},
 
-    Your account has been created as a Manager in our system. Below are your login details:
+    Welcome to Role Review, powered by Activate Human Capital Group!  
+    You have been asked to complete a Role Review activity for one of the following purposes:  
+    - New Role Design/Development  
+    - Onboarding  
+    - Performance Management  
+    - Succession Planning/Retirement  
+    - Delegate & Elevate  
 
-    Email: {manager_email}
-    Password: {password}
+    Please click the link below to begin the process. If needed, there are short videos to guide you:  
+    {form_link} 
 
-    Please use these details to log in and manage your organization.
+    Your login details:  
+    - **Email:** {manager_email}  
+    - **Temporary Password:** {password}   
 
-    Thank you!
+    The Role Review process was designed to improve clarity of expectations, communications, and the path to career success.  
+    Thank you for making this investment of approximately 25 minutes – a little clarity can go a LONG way when it comes to career satisfaction and employee engagement.  
+
+    For additional support or information, please contact info@activatehcg.com.  
+
+    Best regards,  
+    Activate Human Capital Group
     """
 
     msg.attach(MIMEText(body, 'plain'))
@@ -317,35 +405,101 @@ def send_manager_email(manager_email: str, manager_name: str, password: str):
         print(f"Error sending email: {e}")
         raise HTTPException(status_code=500, detail="Failed to send email")
 
-# POST API for creating an organization
-# @router.post("/add/organizations", response_model=OrganizationResponse)
-# def create_organization(current_user:UserDependency,organization: OrganizationCreate, db: Session = Depends(get_db)):
-#     # Check if organization with the same name already exists
-#     existing_organization = db.query(Organization).filter(Organization.name == organization.name).first()
-#     if existing_organization:
-#         raise HTTPException(status_code=400, detail="Organization with this name already exists")
-    
-#     # Create a new organization
-#     new_organization = Organization(**organization.dict())
-#     db.add(new_organization)
-#     db.commit()
-#     db.refresh(new_organization)
-    
-#     return new_organization
+
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# @router.post("/add/organizations", response_model=OrganizationResponse)
+# def create_organization_with_manager(
+#     current_user: UserDependency,
+#     organization: OrganizationCreate, 
+    
+#     db: Session = Depends(get_db),
+# ):
+#     # Check if an organization with the same name already exists
+#     existing_organization = db.query(Organization).filter(Organization.name == organization.organization_name).first()
+#     if existing_organization:
+#         # raise HTTPException(status_code=400, detail="Organization with this name already exists")
+#         return JSONResponse(status_code=400, content={"message": "Organization with this name already exists"})
+
+#     # Create a new organization
+#     new_organization = Organization(name=organization.organization_name)
+#     db.add(new_organization)
+#     db.commit()
+#     db.refresh(new_organization)
+
+#     # Check if the 'manager' role exists
+#     user_role = db.query(UserRole).filter(UserRole.role == 'manager').first()
+#     if not user_role:
+#         raise HTTPException(status_code=404, detail="Manager role not found")
+
+#     # Check if a manager already exists with the same email in this organization
+#     existing_manager = db.query(Manager).filter(Manager.email == organization.manager_email, Manager.organization_id == new_organization.id).first()
+#     print("existing_manager",existing_manager)
+#     if existing_manager:
+#         # raise HTTPException(status_code=400, detail="A manager with this email already exists in the same organization")
+#         return JSONResponse(status_code=400, content={"message": "A manager with this email already exists in the same organization"})
+
+#     # Hash the provided manager password
+#     hashed_password = pwd_context.hash(organization.manager_password)
+
+#     # Create a manager using the provided details
+#     new_manager = Manager(
+#         name=organization.manager_name,
+#         email=organization.manager_email,
+#         organization_id=new_organization.id,
+#     )
+#     db.add(new_manager)
+#     db.commit()
+#     db.refresh(new_manager)
+
+#     # Create the manager as a user in the User table
+#     new_user = User(
+#         name=new_manager.name,
+#         email=new_manager.email,
+#         password_hash=hashed_password,
+#         role_id=user_role.id,
+#         organization_id=new_organization.id,
+#     )
+#     db.add(new_user)
+#     db.commit()
+#     db.refresh(new_user)
+
+#     return new_organization
+# -------------------------New--------------------------------------------------
+smtp_server = "smtp.gmail.com"
+smtp_port = 587
+EMAIL_USERNAME = "helishah2116@gmail.com"  # Your Gmail address
+EMAIL_PASSWORD = "lkyr uoby fjql ygka"  # Your email password
+ # Sender email
+
+def send_email(recipient_email, subject, body):
+    msg = MIMEMultipart()
+    msg["From"] = EMAIL_USERNAME
+    msg["To"] = recipient_email
+    msg["Subject"] = subject
+
+    msg.attach(MIMEText(body, "plain"))
+
+    try:
+        server = smtplib.SMTP(smtp_server, smtp_port)
+        server.starttls()  # Secure the connection
+        server.login(EMAIL_USERNAME, EMAIL_PASSWORD)
+        server.sendmail(EMAIL_USERNAME, recipient_email, msg.as_string())
+        server.quit()
+        print(f"Email sent successfully to {recipient_email}")
+    except Exception as e:
+        print(f"Error sending email: {e}")
+
 @router.post("/add/organizations", response_model=OrganizationResponse)
 def create_organization_with_manager(
     current_user: UserDependency,
     organization: OrganizationCreate, 
-    
     db: Session = Depends(get_db),
 ):
     # Check if an organization with the same name already exists
     existing_organization = db.query(Organization).filter(Organization.name == organization.organization_name).first()
     if existing_organization:
-        # raise HTTPException(status_code=400, detail="Organization with this name already exists")
         return JSONResponse(status_code=400, content={"message": "Organization with this name already exists"})
 
     # Create a new organization
@@ -359,41 +513,159 @@ def create_organization_with_manager(
     if not user_role:
         raise HTTPException(status_code=404, detail="Manager role not found")
 
-    # Check if a manager already exists with the same email in this organization
-    existing_manager = db.query(Manager).filter(Manager.email == organization.manager_email, Manager.organization_id == new_organization.id).first()
-    print("existing_manager",existing_manager)
+    # Check if a manager with the same email already exists in this organization
+    existing_manager = db.query(Manager).filter(
+        Manager.email == organization.manager_email, 
+        Manager.organization_id == new_organization.id
+    ).first()
+
     if existing_manager:
-        # raise HTTPException(status_code=400, detail="A manager with this email already exists in the same organization")
         return JSONResponse(status_code=400, content={"message": "A manager with this email already exists in the same organization"})
 
     # Hash the provided manager password
     hashed_password = pwd_context.hash(organization.manager_password)
 
-    # Create a manager using the provided details
+    # Create a manager entry
     new_manager = Manager(
         name=organization.manager_name,
         email=organization.manager_email,
         organization_id=new_organization.id,
+        is_owner=True
     )
     db.add(new_manager)
     db.commit()
     db.refresh(new_manager)
 
-    # Create the manager as a user in the User table
+    # Create a user entry for the manager
     new_user = User(
         name=new_manager.name,
         email=new_manager.email,
         password_hash=hashed_password,
-        role_id=user_role.id,
+        role_id=user_role.id,  # Assign "manager" role
         organization_id=new_organization.id,
     )
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
+    login_link = "http://activate-hrm.s3-website-ap-southeast-2.amazonaws.com/"
+    # Send welcome email
+    email_subject = "Welcome to Role Review powered by Activate Human Capital Group – You are now the Org Admin"
+    email_body = f"""
+    Welcome to Role Review, powered by Activate Human Capital Group! 
+
+    You have been set up as your organization’s Admin User to create managers, employees, and assign Role Review efforts for any of the following purposes:
+
+    - New Role Design/Development
+    - Onboarding
+    - Performance Management
+    - Succession Planning/Retirement
+    - Delegate & Elevate
+
+    Please save your login and password for future use:
+    Login: {login_link} 
+    Password: {organization.manager_password}
+
+    For additional support or information, please contact info@activatehcg.com
+    """
+
+    send_email(new_user.email, email_subject, email_body)
 
     return new_organization
 
+@router.get("/organizations/{organization_id}")
+def get_organization(organization_id: int, db: Session = Depends(get_db)):
+    organization = db.query(Organization).filter(Organization.id == organization_id).first()
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
 
+    # Fetch the user with role_id = 4 (Owner) for the organization
+    owner = (
+    db.query(User)
+    .filter(
+        User.organization_id == organization.id,
+        User.role_id == 2,
+        User.manager_id == None  # Ensure manager_id is NULL
+    )
+    .first()
+)
+    return {
+        "organization_name": organization.name,
+        "owner_name": owner.name if owner else "N/A",
+        "owner_email": owner.email if owner else "N/A",
+        "created_at": organization.created_at,
+    }
+
+class OrganizationUpdate(BaseModel):
+    organization_name: str
+    owner_name: str
+    owner_email: EmailStr
+
+@router.put("/organizations/{organization_id}")
+def update_organization(
+    organization_id: int,
+    org_update: OrganizationUpdate,
+    db: Session = Depends(get_db),
+):
+    organization = db.query(Organization).filter(Organization.id == organization_id).first()
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    # Fetch the user entry (organization owner)
+    owner = (
+        db.query(User)
+        .filter(
+            User.organization_id == organization.id,
+            User.role_id == 2,  # Assuming '2' is the role ID for Owner/Admin
+            User.manager_id == None  
+        )
+        .first()
+    )
+
+    if not owner:
+        raise HTTPException(status_code=404, detail="Account owner not found")
+
+    # Fetch the corresponding manager entry for the owner
+    owner_manager = (
+        db.query(Manager)
+        .filter(
+            Manager.organization_id == organization.id,
+            Manager.is_owner == True  # Ensure we are updating only the owner manager
+        )
+        .first()
+    )
+
+    if not owner_manager:
+        raise HTTPException(status_code=404, detail="Owner manager record not found")
+
+    # Update organization details
+    organization.name = org_update.organization_name
+
+    # Update the User table
+    owner.name = org_update.owner_name
+    owner.email = org_update.owner_email
+
+    # Update the Manager table
+    owner_manager.name = org_update.owner_name
+    owner_manager.email = org_update.owner_email
+
+    db.commit()
+    return {"message": "Organization and owner info updated successfully"}
+
+
+class ResetPassword(BaseModel):
+    new_password: str
+
+@router.put("/organizations/{organization_id}/reset-password")
+def reset_owner_password(organization_id: int, reset_data: ResetPassword, db: Session = Depends(get_db)):
+    owner = db.query(User).filter(User.organization_id == organization_id, User.role_id == 2,User.manager_id == None).first()
+    if not owner:
+        raise HTTPException(status_code=404, detail="Account owner not found")
+
+    owner.password_hash = pwd_context.hash(reset_data.new_password)
+    db.commit()
+    
+    return {"message": "Password reset successfully"}
+# ---------------------------------New----------------------------------------
 @router.get("/get-organization-name", response_model=OrganizationNameResponse)
 def get_organization_name(current_user:UserDependency, db: Session = Depends(get_db)):
     """
@@ -415,48 +687,34 @@ def get_organization_name(current_user:UserDependency, db: Session = Depends(get
     return {"organization_name": organization.name}
 
 
-# @router.post("/add/employee", response_model=NewEmployeeResponse)
-# def create_employee(current_manager: UserDependency, employee: NewEmployeeCreate, db: Session = Depends(get_db)):
-#     # Extract manager_id from the current user
-#     manager_id = current_manager["manager_id"]
+class GenerateFormLinkResponse(BaseModel):
+    registration_url: str
+    message: str
+    user_id: int
+class GenerateFormLinkRequest(BaseModel):
+    email: str
+@router.post("/generateFormLink", response_model=GenerateFormLinkResponse)
+def generate_form_link(
+    request: GenerateFormLinkRequest,
+    db: Session = Depends(get_db),
+):
+    # Fetch user from DB using email
+    user = db.query(User).filter(User.email == request.email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
 
-#     # Get the manager using the manager_id
-#     manager = db.query(Manager).filter(Manager.id == manager_id).first()
-#     if not manager:
-#         raise HTTPException(status_code=404, detail="Manager not found")
+    # Generate a JWT token for secure access
+    access_token = create_jwt_token({"user_id": user.id})
 
-#     # Check if the employee already exists
-#     existing_employee = db.query(User).filter(User.email == employee.email).first()
-#     if existing_employee:
-#         raise HTTPException(status_code=400, detail="Employee with this email already exists")
-    
-#     # Hash the password before storing it
-#     hashed_password = pwd_context.hash(employee.password)  # Hash password with bcrypt
+    # Create the form URL with the token
+    form_link = f"http://activate-hrm.s3-website-ap-southeast-2.amazonaws.com/user_details-stepss/{access_token}"
 
-#     # Get the role from UserRole table (use employee.role_name from the request to match the role)
-#     user_role = db.query(UserRole).filter(UserRole.role == "employee").first()
-#     if not user_role:
-#         raise HTTPException(status_code=404, detail=f"Role '{employee.role}' not found")
-
-#     # Create the new employee, associating the organization_id from the manager
-#     new_employee = User(
-#         name=employee.name,
-#         email=employee.email,
-#         password_hash=hashed_password,
-#         role_id=user_role.id,  # Assign the correct role_id from UserRole
-#         organization_id=manager.organization_id,  # Use manager's organization_id
-#         manager_id=manager.id,  # Associate with the manager who is creating this employee
-#        # Optionally, add job title if provided
-#     )
-
-#     # Add and commit the new employee
-#     db.add(new_employee)
-#     db.commit()
-#     db.refresh(new_employee)
-
-#     # Return the newly created employee
-#     return new_employee
-
+    # Return a structured response
+    return {
+        "registration_url": form_link,
+        "user_id": user.id,
+        "message": "Registration link generated successfully"
+    }
 
 @router.post("/add/employee", response_model=NewEmployeeResponse)
 def create_employee_and_send_email(
@@ -500,16 +758,7 @@ def create_employee_and_send_email(
     # Send email with the form link
     # form_link = f"http://localhost:3001/complete-registration?token={form_token}"
     form_link = f"http://activate-hrm.s3-website-ap-southeast-2.amazonaws.com/complete-registration?token={form_token}"
-    email_subject = "Complete Your Employee Registration"
-    email_body = f"""
-    Hello {employee.name},
-
-    Your manager has invited you to join the organization. Please complete your registration by clicking the link below:
-
-    {form_link}
-
-    Thank you!
-    """
+    
     print(employee.email)
     send_registration_email(employee.name,employee.email,form_token)
     return new_employee
@@ -532,19 +781,27 @@ def create_employee_and_send_email(
     # Add employee record with status `pending`
 
     # Send email with the form link
-    # form_link = f"http://localhost:3001/user_details-stepss/{existing_employee.id}"
-    # form_link = f"http://localhost:3001/user_details-stepss/{form_token}"
-    # form_link = f"http://activate-hrm.s3-website-ap-southeast-2.amazonaws.com/user_details-stepss/{existing_employee.id}"
+   
     form_link = f"http://activate-hrm.s3-website-ap-southeast-2.amazonaws.com/user_details-stepss/{form_token}"
-    email_subject = "Complete Your Employee Profile"
+    email_subject = "Welcome to Role Review – You have been invited to complete a Role Review Activity"
     email_body = f"""
-    Hello,
+    Welcome to Role Review, powered by Activate Human Capital Group!
 
-    Your manager has invited you to join the organization. Please add your RoleReview details by clicking the link below:
+    You have been asked to complete a Role Review activity for one of the following purposes:
+
+    - New Role Design/Development  
+    - Onboarding  
+    - Performance Management  
+    - Succession Planning/Retirement  
+    - Delegate & Elevate  
+
+    Please click the link below to begin the process. If needed, there are short videos to guide you.
 
     {form_link}
 
-    Thank you!
+    The Role Review process was designed to improve clarity of expectations, communications, and the path to career success. Thank you for making this investment of approximately 25 minutes – a little clarity can go a LONG way when it comes to career satisfaction and employee engagement.
+
+    For additional support or information, please contact info@activatehcg.com
     """
     import smtplib
     from email.mime.text import MIMEText
@@ -614,17 +871,27 @@ def send_registration_email(employee_name: str, employee_email: str,form_token: 
     form_link = f"http://activate-hrm.s3-website-ap-southeast-2.amazonaws.com/complete-registration?token={form_token}"
     # Email content
     print(f"Recipient email: {employee_email}")
-    email_subject = "Complete Your Employee Registration"
+    email_subject = "Welcome to Role Review – You have been invited to complete a Role Review Activity"
     email_body = f"""
-    Hello {employee_name},
+    Welcome to Role Review, powered by Activate Human Capital Group!
 
-    Your manager has invited you to join the organization. Please complete your registration by clicking the link below:
+    You have been asked to complete a Role Review activity for one of the following purposes:
+
+    - New Role Design/Development  
+    - Onboarding  
+    - Performance Management  
+    - Succession Planning/Retirement  
+    - Delegate & Elevate  
+
+    Please click the link below to begin the process. If needed, there are short videos to guide you.
 
     {form_link}
 
-    Thank you!
+    The Role Review process was designed to improve clarity of expectations, communications, and the path to career success. Thank you for making this investment of approximately 25 minutes – a little clarity can go a LONG way when it comes to career satisfaction and employee engagement.
+
+    For additional support or information, please contact info@activatehcg.com
     """
-    print("hello")
+
     
     # SMTP Configuration (Example for Gmail)
     import smtplib

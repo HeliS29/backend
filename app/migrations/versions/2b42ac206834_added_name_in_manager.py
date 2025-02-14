@@ -20,7 +20,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
      op.add_column('managers',
-        sa.Column('name', sa.String(100), nullable=False)
+        sa.Column("name", sa.String(100), nullable=False)
     )
 
 

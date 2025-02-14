@@ -1,3 +1,4 @@
+import json
 from typing import Annotated, List
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
@@ -52,6 +53,8 @@ def create_or_update_review(role_review: RoleReviewCreate, db: Session = Depends
         user = db.query(User).filter(User.id == role_review.user_id).first()
         if user:
             user.purpose = role_review.purpose
+            user.prepared_by = role_review.prepared_by
+            user.name = role_review.name
             user.updated_at = datetime.now()  # Ensure to update the timestamp for the user
             db.add(user)
         
@@ -112,33 +115,30 @@ def update_review(user_id: int, role_review: RoleReviewUpdate, db: Session = Dep
 def submit_work(work_data: SubmitWorkRequest, db: Session = Depends(get_db)):
     try:
         # Delete existing work data for the user
-        existing_work_data = db.query(WorkData).filter(WorkData.user_id == work_data.user_id).all()
-        for item in existing_work_data:
-            db.delete(item)
-        db.commit()  # Commit the deletion
+        db.query(WorkData).filter(WorkData.user_id == work_data.user_id).delete()
+        db.commit()  # Commit deletion
 
-        # Validate that the work_data is properly structured
+        # Ensure work_data is a list
         if not isinstance(work_data.work_data, list):
             raise HTTPException(status_code=400, detail="Work data should be a list")
-        
-        # Validate that each item has the required fields
-        for item in work_data.work_data:
-            work_description = item.work_description
-            hours_per_month = item.hours_per_month
-            rows = item.rows
 
-            if not all([work_description, hours_per_month, rows]):
-                raise HTTPException(status_code=400, detail="Missing required fields")
-
-        # Store the data in the database
         work_data_list = []
+
         for item in work_data.work_data:
+            try:
+                # Validate JSON format for `rows`
+                parsed_rows = json.loads(item.rows) if item.rows else []
+
+            except json.JSONDecodeError:
+                raise HTTPException(status_code=400, detail="Invalid JSON format in 'rows'")
+
+            # Insert data into database
             work_data_entry = WorkData(
                 user_id=work_data.user_id,
-                work_description=item.work_description,
-                hours_description=item.hours_per_month,
-                rows=item.rows,
-                comments=work_data.comments  # Shared comments for all entries for this user
+                work_description=item.work_description,  # Optional
+                hours_description=item.hours_per_month,  # Maps correctly
+                rows=json.dumps(parsed_rows),  # Store as JSON string
+                comments=item.comments or work_data.comments  # Use per-item or shared comments
             )
             work_data_list.append(work_data_entry)
 
@@ -147,8 +147,12 @@ def submit_work(work_data: SubmitWorkRequest, db: Session = Depends(get_db)):
 
         return JSONResponse(content={"message": "Work data submitted successfully"}, status_code=200)
 
+    except HTTPException as e:
+        db.rollback()
+        raise e  # Re-raise known exceptions
+
     except Exception as e:
-        db.rollback() # Rollback the session if there's an error
+        db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
     
 
@@ -157,20 +161,23 @@ def get_work_data(user_id: int, db: Session = Depends(get_db)):
     try:
         # Fetch the work data for the specific user
         work_data_entries = db.query(WorkData).filter(WorkData.user_id == user_id).all()
-        
+
         if not work_data_entries:
-            raise HTTPException(status_code=404, detail="No work data found for the given user")
+            # Return an empty response instead of an error
+            return WorkDataWithCommentsResponse(
+                user_id=user_id,
+                work_data=[],  # Empty list when no data is found
+                comments=None
+            )
 
-        # Extract the shared comments (assuming it's the same for all work entries)
-        comments = work_data_entries[0].comments  # Assuming the comment is the same for all entries
+        # Extract shared comments (assuming it's the same for all work entries)
+        comments = work_data_entries[0].comments if work_data_entries else None
 
-        # Prepare the response data
+        # Prepare response data
         work_data_response = [
             {
                 "work_description": entry.work_description,
                 "hours_per_month": entry.hours_description,
-                
-                # Attach the shared comments
             }
             for entry in work_data_entries
         ]
@@ -182,4 +189,4 @@ def get_work_data(user_id: int, db: Session = Depends(get_db)):
         )
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return JSONResponse(status_code=500, content={"detail": str(e)})
