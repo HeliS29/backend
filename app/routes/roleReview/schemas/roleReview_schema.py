@@ -56,8 +56,8 @@ class RoleReviewResponse(BaseModel):
 
 
 class WorkDataAdd(BaseModel):
-    work_description: str
-    hours_per_month: int
+    work_description: Optional[str]=None
+    hours_per_month: Optional[int]=None
     rows: str  # Store rows as JSON string
     comments: Optional[str] = None  # Optional comments for each entry
 
@@ -74,14 +74,10 @@ class SubmitWorkRequest(BaseModel):
 
 
 class WorkDataResponse(BaseModel):
-    work_description: str
-    hours_per_month: int
-     # Optional for each work entry
+    work_description: Optional[str] = None
+    hours_per_month: Optional[int] = None  # Allow None values
 
 class WorkDataWithCommentsResponse(BaseModel):
     user_id: int
     work_data: list[WorkDataResponse]
-    comments: Optional[str] = None  # Shared comment for the user
-
-    class Config:
-        orm_mode = True
+    comments: Optional[str] = None
