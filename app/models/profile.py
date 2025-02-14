@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime,func
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime,func,Boolean
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from database import Base
@@ -14,6 +14,7 @@ class Manager(Base):
     organization_id = Column(Integer, ForeignKey("organizations.id",ondelete="CASCADE"), nullable=True)
     created_at = Column(DateTime,default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    is_owner = Column(Boolean, default=False) 
 
 
 

@@ -49,8 +49,8 @@ class WorkData(Base):
     __tablename__ = 'workdata'
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    work_description = Column(String(500), nullable=False)
-    hours_description = Column(String(500), nullable=False)
+    work_description = Column(String(500), nullable=True)
+    hours_description = Column(String(500), nullable=True)
     rows = Column(Text, nullable=False)  # Store rows as a JSON object
     comments = Column(String(500), nullable=True)
     created_at = Column(DateTime, default=datetime.now)
