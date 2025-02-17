@@ -84,20 +84,50 @@ scheduler.start()
 
 @router.post("/send-email", response_model=EmailRequest)  # ✅ Use Pydantic model for response
 def send_email(request: EmailRequest, db: Session = Depends(get_db)):
+    try:
+    # Here, make sure to pass the necessary parameters.
+    # For example, if your EmailRequest has a recipient_email field:
+        email_sent = send_email_via_smtp(
+            request.recipient_email,  
+            request.subject, 
+            request.body, 
+            request.attachment_path if hasattr(request, "attachment_path") else None
+        )
+    except Exception as e:
+        # Log the error if needed and continue with status "pending"
+        email_sent = False
+
+    # Set status and sent timestamp based on the result
+    status = "sent" if email_sent else "pending"
+    sent_time = datetime.now() if email_sent else None
+
     new_email = EmailQueue(
         recipient_id=request.recipient_id,
         recipient_type=request.recipient_type,
         subject=request.subject,
         body=request.body,
-        status="pending",  # Default to pending
+        status=status,           # Set status to "sent" if email_sent is True, otherwise "pending"
         created_at=datetime.now(),
-        sent_at=request.sent_at,
+        sent_at=sent_time,       # Record the sent time if email was successfully sent
     )
     db.add(new_email)
     db.commit()
     db.refresh(new_email)
+    return new_email
+    # new_email = EmailQueue(
+    #     recipient_id=request.recipient_id,
+    #     recipient_type=request.recipient_type,
+    #     subject=request.subject,
+    #     body=request.body,
+    #     status="pending",  # Default to pending
+    #     created_at=datetime.now(),
+    #     sent_at=request.sent_at,
+    # )
+    # db.add(new_email)
+    # db.commit()
+    # db.refresh(new_email)
 
-    return new_email 
+    # return new_email 
 
 # @router.post("/send-email")
 # def send_email(current_user:UserDependency,request: EmailRequest, db: Session = Depends(get_db)):
