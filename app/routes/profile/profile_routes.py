@@ -615,7 +615,7 @@ def update_organization(
         db.query(User)
         .filter(
             User.organization_id == organization.id,
-            User.role_id == 2,  # Assuming '2' is the role ID for Owner/Admin
+            User.role_id == 3,  # Assuming '2' is the role ID for Owner/Admin
             User.manager_id == None  
         )
         .first()
