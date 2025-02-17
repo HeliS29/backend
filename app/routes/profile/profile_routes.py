@@ -583,7 +583,7 @@ def get_organization(organization_id: int, db: Session = Depends(get_db)):
     db.query(User)
     .filter(
         User.organization_id == organization.id,
-        User.role_id == 2,
+        User.role_id == 3,
         User.manager_id == None  # Ensure manager_id is NULL
     )
     .first()
