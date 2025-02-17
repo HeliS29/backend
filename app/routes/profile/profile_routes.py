@@ -657,7 +657,7 @@ class ResetPassword(BaseModel):
 
 @router.put("/organizations/{organization_id}/reset-password")
 def reset_owner_password(organization_id: int, reset_data: ResetPassword, db: Session = Depends(get_db)):
-    owner = db.query(User).filter(User.organization_id == organization_id, User.role_id == 2,User.manager_id == None).first()
+    owner = db.query(User).filter(User.organization_id == organization_id, User.role_id == 3,User.manager_id == None).first()
     if not owner:
         raise HTTPException(status_code=404, detail="Account owner not found")
 
