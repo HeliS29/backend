@@ -840,6 +840,7 @@ def create_employee_and_send_email(
             recipient_type="user",
             subject=email_subject,
             body=email_body,
+            status="sent", 
             sent_at=datetime.now()
         )
         db.add(new_email)
@@ -931,6 +932,7 @@ def send_registration_email(employee_name: str, employee_email: str,form_token: 
             recipient_type="user",
             subject=email_subject,
             body=email_body,
+            status="sent", 
             sent_at=datetime.utcnow()
         )
         db.add(new_email)
