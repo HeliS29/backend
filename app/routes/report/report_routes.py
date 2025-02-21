@@ -295,7 +295,7 @@ def create_report(user_id: int = Form(...),manager_id: int = Form(...), role: st
         db.commit()
         create_report_notification(new_report, role, is_new_version=False,db=db)
         existing_report = new_report
-        print(existing_report)  # For consistency in variable naming
+         # For consistency in variable naming
     role_review = db.query(RoleReview).filter(RoleReview.user_id == user_id).first()
     core_focus_areas = db.query(CoreFocusArea).filter(CoreFocusArea.user_id == user_id).all()
     critical_activities = db.query(CriticalActivities).filter(CriticalActivities.user_id == user_id).all()
@@ -335,7 +335,7 @@ def create_report(user_id: int = Form(...),manager_id: int = Form(...), role: st
             }
             for focus_area in core_focus_areas
         ]
-    print("report_content_data",report_content_data)
+    
 
     # Add new content for the version
     report_content = ReportContent(
