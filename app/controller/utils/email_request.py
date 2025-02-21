@@ -3,7 +3,15 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email import encoders
-
+import fitz
+def compress_pdf(input_path, output_path):
+    """Compresses a PDF file and saves it to a new location."""
+    try:
+        doc = fitz.open(input_path)
+        doc.save(output_path, garbage=4, deflate=True, clean=True)
+        doc.close()
+    except Exception as e:
+        print(f"Error compressing PDF: {e}")
 # def send_email_via_smtp(recipient_email, subject, body, attachment_path):
 #     import smtplib
 #     from email.mime.text import MIMEText
@@ -63,6 +71,7 @@ def send_email_via_smtp(recipient_email, subject, body, attachment_url=None):
     smtp_port = 587
     EMAIL_USERNAME = "helishah2116@gmail.com"  # Your Gmail address
     EMAIL_PASSWORD = "lkyr uoby fjql ygka"  # Your app password
+    
 
     # Create the email message
     msg = MIMEMultipart()
@@ -72,7 +81,8 @@ def send_email_via_smtp(recipient_email, subject, body, attachment_url=None):
 
     # Attach the body
     msg.attach(MIMEText(body, 'plain'))
-
+    temp_pdf_path = None
+    compressed_pdf_path = None
     # Attach the file from the URL if provided
     if attachment_url:
         print("attachment",attachment_url)
@@ -86,8 +96,21 @@ def send_email_via_smtp(recipient_email, subject, body, attachment_url=None):
             part.set_payload(response.content)
             encoders.encode_base64(part)
             filename = attachment_url.split("/")[-1]
-            part.add_header('Content-Disposition', f'attachment; filename={filename}')
-            msg.attach(part)
+            temp_pdf_path = f"/tmp/{filename}"
+            compressed_pdf_path = f"/tmp/compressed_{filename}"
+            with open(temp_pdf_path, "wb") as f:
+                f.write(response.content)
+
+            # Compress PDF
+            compress_pdf(temp_pdf_path, compressed_pdf_path)
+            with open(compressed_pdf_path, "rb") as f:
+                part = MIMEBase('application', 'octet-stream')
+                part.set_payload(f.read())
+                encoders.encode_base64(part)
+                part.add_header('Content-Disposition', f'attachment; filename=compressed_{filename}')
+                msg.attach(part)
+            # part.add_header('Content-Disposition', f'attachment; filename={filename}')
+            # msg.attach(part)
         except Exception as e:
             print(f"Error attaching file from URL: {e}")
 
