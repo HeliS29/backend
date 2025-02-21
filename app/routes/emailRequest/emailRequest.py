@@ -60,13 +60,28 @@ def process_pending_emails():
             manager_email = manager.email
             attachment_path = f"https://activate-pdfstorage.s3.ap-southeast-2.amazonaws.com/{report.pdf_path}"
 
+            email_body="""
+            Please find the attached Role Review Report, powered by Activate Human Capital Group. This activity was completed for one of the following purposes: 
+                    New Role Design/Development
+                    Onboarding
+                    Performance Management
+                    Succession Planning/Retirement
+                    Delegate & Elevate 
+            Next Step: Review this document with your manager to ensure agreement about Core Focus Areas, Priorities, and Activities. The Role Review process was designed to improve clarity of expectations, communications, and the path to career success. Thank you for making this investment of approximately 25 minutes – a little clarity can go a LONG way when it comes to career satisfaction and employee engagement. 
+            For additional support or information, please contact info@activatehcg.com
+"""
+
             logger.info(f"Sending email for report ID: {report.id}")
-            sent_to_manager = send_email_via_smtp(manager_email, "New Report Available", "Please review the latest report.", attachment_path)
-            sent_to_user = send_email_via_smtp(recipient_email, "New Report Available", "Your latest report is ready.", attachment_path)
-            sent_to_roadmap = send_email_via_smtp("roadmap@activatehcg.com", "New Report Available", "A new report has been uploaded.", attachment_path)
+            sent_to_manager = send_email_via_smtp(manager_email, "Completed Role Review – Your Role Review Report is attached", email_body, attachment_path)
+            sent_to_user = send_email_via_smtp(recipient_email, "Completed Role Review – Your Role Review Report is attached", email_body, attachment_path)
+            sent_to_roadmap = send_email_via_smtp("roadmap@activatehcg.com", "Completed Role Review – Your Role Review Report is attached", email_body, attachment_path)
 
             if sent_to_manager or sent_to_user or sent_to_roadmap:
-                report.is_email = True  # ✅ Mark email as sent
+                report.is_email = True
+                email_record = db.query(EmailQueue).filter(EmailQueue.recipient_id == user.id, EmailQueue.status == "pending").first()
+                if email_record:
+                    email_record.status = "sent"
+                    email_record.sent_at = datetime.now()  # ✅ Mark email as sent
                 db.commit()
                 logger.info(f"Email sent and updated for report ID: {report.id}")
             else:
