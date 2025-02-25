@@ -367,9 +367,12 @@ def send_manager_email(manager_email: str, manager_name: str, password: str, for
     - Succession Planning/Retirement  
     - Delegate & Elevate  
 
-    Please click the link below to begin the process. If needed, there are short videos to guide you:  
-    {form_link} 
-
+    Please click {form_link} this link to begin the process. If needed, there are short videos to guide you:  
+        - **Step 1 Video:** https://youtu.be/z7PPP-7L14Q
+        - **Step 2 Video:** https://youtu.be/f9HCBD1uobI
+        - **Step 3 Video:** https://youtu.be/MauV2Ui6arQ
+        - **Step 4 Video:** https://youtu.be/vMelUwt0j1g 
+   
     Your login details:  
     - **Email:** {manager_email}  
     - **Temporary Password:** {password}   
@@ -796,9 +799,11 @@ def create_employee_and_send_email(
     - Delegate & Elevate  
 
     Please click {form_link} this link to begin the process. If needed, there are short videos to guide you.
-
+        - **Step 1 Video:** https://youtu.be/z7PPP-7L14Q
+        - **Step 2 Video:** https://youtu.be/f9HCBD1uobI
+        - **Step 3 Video:** https://youtu.be/MauV2Ui6arQ
+        - **Step 4 Video:** https://youtu.be/vMelUwt0j1g 
     
-
     The Role Review process was designed to improve clarity of expectations, communications, and the path to career success. Thank you for making this investment of approximately 25 minutes – a little clarity can go a LONG way when it comes to career satisfaction and employee engagement.
 
     For additional support or information, please contact info@activatehcg.com
@@ -885,7 +890,10 @@ def send_registration_email(employee_name: str, employee_email: str,form_token: 
     - Delegate & Elevate  
 
     Please click {form_link} this link to begin the process. If needed, there are short videos to guide you.
-
+        - **Step 1 Video:** https://youtu.be/z7PPP-7L14Q
+        - **Step 2 Video:** https://youtu.be/f9HCBD1uobI
+        - **Step 3 Video:** https://youtu.be/MauV2Ui6arQ
+        - **Step 4 Video:** https://youtu.be/vMelUwt0j1g 
     
 
     The Role Review process was designed to improve clarity of expectations, communications, and the path to career success. Thank you for making this investment of approximately 25 minutes – a little clarity can go a LONG way when it comes to career satisfaction and employee engagement.
