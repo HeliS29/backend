@@ -795,9 +795,9 @@ def create_employee_and_send_email(
     - Succession Planning/Retirement  
     - Delegate & Elevate  
 
-    Please click the link below to begin the process. If needed, there are short videos to guide you.
+    Please click {form_link} this link to begin the process. If needed, there are short videos to guide you.
 
-    {form_link}
+    
 
     The Role Review process was designed to improve clarity of expectations, communications, and the path to career success. Thank you for making this investment of approximately 25 minutes – a little clarity can go a LONG way when it comes to career satisfaction and employee engagement.
 
@@ -884,9 +884,9 @@ def send_registration_email(employee_name: str, employee_email: str,form_token: 
     - Succession Planning/Retirement  
     - Delegate & Elevate  
 
-    Please click the link below to begin the process. If needed, there are short videos to guide you.
+    Please click {form_link} this link to begin the process. If needed, there are short videos to guide you.
 
-    {form_link}
+    
 
     The Role Review process was designed to improve clarity of expectations, communications, and the path to career success. Thank you for making this investment of approximately 25 minutes – a little clarity can go a LONG way when it comes to career satisfaction and employee engagement.
 
