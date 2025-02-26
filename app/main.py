@@ -23,7 +23,7 @@ from fastapi.staticfiles import StaticFiles
 # JWT_BEARER = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+# app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000", "http://192.168.3.19:49340","http://activate-hrm.s3-website-ap-southeast-2.amazonaws.com"],  # List of allowed origins
