@@ -273,7 +273,7 @@ def get_organizations(db: Session = Depends(get_db)):
 # ----------------------------------------------New-------------------------------
 @router.post("/add/managers", response_model=ManagerResponse)
 def create_manager(current_user: UserDependency, manager: ManagerCreate, db: Session = Depends(get_db)):
-    try:
+
     # Fetch current logged-in user (assumed that current_user is a dependency containing user info)
         print(current_user)
         current_user_id = current_user['manager_id']  # Assuming the `UserDependency` includes `id`
@@ -348,10 +348,7 @@ def create_manager(current_user: UserDependency, manager: ManagerCreate, db: Ses
         return new_manager
     
     
-    except Exception as e:
-        db.rollback()  # Rollback transaction for any other error
-        return JSONResponse(status_code=500, content={"detail": "An unexpected error occurred."})
-
+    
 
 def send_manager_email(manager_email: str, manager_name: str, password: str, form_link: str):
     """Send email with manager's login details."""
