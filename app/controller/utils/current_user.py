@@ -11,6 +11,7 @@ from fastapi.security import OAuth2PasswordBearer
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login") 
 
+
 async def get_current_user(token=Depends(oauth2_scheme)):
     """Get current user"""
     try:
@@ -22,6 +23,7 @@ async def get_current_user(token=Depends(oauth2_scheme)):
         # print(payload)
         user_id: str = payload.get("user_id")
         manager_id: str = payload.get("manager_id")
+        organization_id: int = payload.get("organization_id")
         # user_name: str = payload.get("")
         user_role: str = payload.get("role")
         if user_role is None:
@@ -29,6 +31,6 @@ async def get_current_user(token=Depends(oauth2_scheme)):
                 status_code=401,
                 detail=f"[get_current_user] Could not validate credentials{user_id}",
             )
-        return { "id": user_id, "user_role": user_role,"manager_id":manager_id}
+        return { "id": user_id, "user_role": user_role,"manager_id":manager_id,"organization_id": organization_id}
     except JWTError:
         raise HTTPException(status_code=401, detail="Could not validate credentials.")

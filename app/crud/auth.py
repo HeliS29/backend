@@ -17,10 +17,11 @@ def create_user(db: Session, name: str, email: str, password: str):
     db.refresh(user)
     return user
 
-def authenticate_user(db: Session, email: str, password: str):
+def authenticate_user(db: Session, email: str, password: str,organization_id:str):
     db.expunge_all()
-    user = db.query(User).filter(User.email == email).first()
+    user = db.query(User).filter(User.email == email,User.organization_id==organization_id).first()
     print(user)
+    print(f"User data: {user.__dict__ if user else None}") 
     if user and pwd_context.verify(password, user.password_hash):
         return user
     return None
