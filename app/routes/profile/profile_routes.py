@@ -13,6 +13,7 @@ from database import get_db
 from models.users import User, UserRole
 from passlib.context import CryptContext
 from models.profile import *
+from sqlalchemy.exc import IntegrityError
 from routes.profile.schemas.profile_schema import CurrentUserInfoResponse, EmployeeCreate,EmployeeCreateresponse,EmployeeResponseForUpdate,EmployeeResponse, LinkRegistrationResponse,ManagerResponse, NewEmployeeCreate, NewEmployeeResponse, OrganizationNameResponse,OrganizationResponse,ManagerCreate,OrganizationCreate, RegistrationReq, ResendEmail, resendEmailResponse, updateDetails
 from controller.utils.current_user import get_current_user
 router = APIRouter()
@@ -272,78 +273,88 @@ def get_organizations(db: Session = Depends(get_db),current_user: User = Depends
 # ----------------------------------------------New-------------------------------
 @router.post("/add/managers", response_model=ManagerResponse)
 def create_manager(current_user: UserDependency, manager: ManagerCreate, db: Session = Depends(get_db)):
+    try:
     # Fetch current logged-in user (assumed that current_user is a dependency containing user info)
-    print(current_user)
-    current_user_id = current_user['manager_id']  # Assuming the `UserDependency` includes `id`
+        print(current_user)
+        current_user_id = current_user['manager_id']  # Assuming the `UserDependency` includes `id`
+        
+        # Fetch the manager associated with the current user
+        current_manager = db.query(Manager).filter(Manager.id == current_user_id).first()
+        
+        if not current_manager:
+            raise HTTPException(status_code=404, detail="Manager not found for the current user")
+        
+        # Get the organization ID of the current manager
+        organization_id = current_manager.organization_id
+
+        # Check if the organization exists
+        organization = db.query(Organization).filter(Organization.id == organization_id).first()
+        if not organization:
+            raise HTTPException(status_code=404, detail="Organization not found")
+        
+        # Check if manager with the same email already exists in the same organization
+        existing_manager = db.query(Manager).filter(Manager.email == manager.email, Manager.organization_id == organization_id).first()
+        if existing_manager:
+            return JSONResponse(status_code=400, content={"detail": "Manager with this email already exists in this organization"})
+
+        # Create the new manager in the Manager table
+        new_manager = Manager(
+            name=manager.name,
+            email=manager.email,
+            organization_id=organization_id  # Associate with current manager's organization
+        )
+        db.add(new_manager)
+        db.commit()
+        db.refresh(new_manager)
+
+        # Now create the manager in the User table
+        user_role = db.query(UserRole).filter(UserRole.role == 'manager').first()
+        if not user_role:
+            raise HTTPException(status_code=404, detail="Manager role not found")
+        
+        # Hash the password before saving
+        hashed_password = pwd_context.hash(manager.password)
+        
+        # Create a new user associated with the manager
+        new_user = User(
+            name=manager.name,
+            email=manager.email,
+            password_hash=hashed_password,
+            role_id=user_role.id,
+            job_title=manager.job_title,
+            organization_id=organization_id,
+            manager_id=current_user_id,  # Associate the manager_id with user
+        )
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+
+        # Fetch the newly created user's ID
+        existing_employee = db.query(User).filter(User.email == manager.email).first()
+        if not existing_employee:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # Generate form token
+        form_token = create_jwt_token({"user_id": existing_employee.id})
+        print("Generated form token:", form_token)
+
+        # Create the form link
+        form_link = f"http://activate-hrm.s3-website-ap-southeast-2.amazonaws.com/user_details-stepss/{form_token}"
+
+        # Send the email with login credentials and form link
+        send_manager_email(manager.email, manager.name, manager.password, form_link)
+
+        # Return the created manager
+        return new_manager
     
-    # Fetch the manager associated with the current user
-    current_manager = db.query(Manager).filter(Manager.id == current_user_id).first()
-    
-    if not current_manager:
-        raise HTTPException(status_code=404, detail="Manager not found for the current user")
-    
-    # Get the organization ID of the current manager
-    organization_id = current_manager.organization_id
+    except IntegrityError as e:
+        db.rollback()  # Rollback transaction in case of IntegrityError
+        return JSONResponse(status_code=400, content={"detail": "Duplicate entry: This email is already in use."})
 
-    # Check if the organization exists
-    organization = db.query(Organization).filter(Organization.id == organization_id).first()
-    if not organization:
-        raise HTTPException(status_code=404, detail="Organization not found")
-    
-    # Check if manager with the same email already exists in the same organization
-    existing_manager = db.query(Manager).filter(Manager.email == manager.email, Manager.organization_id == organization_id).first()
-    if existing_manager:
-        return JSONResponse(status_code=400, content={"detail": "Manager with this email already exists in this organization"})
+    except Exception as e:
+        db.rollback()  # Rollback transaction for any other error
+        return JSONResponse(status_code=500, content={"detail": "An unexpected error occurred."})
 
-    # Create the new manager in the Manager table
-    new_manager = Manager(
-        name=manager.name,
-        email=manager.email,
-        organization_id=organization_id  # Associate with current manager's organization
-    )
-    db.add(new_manager)
-    db.commit()
-    db.refresh(new_manager)
-
-    # Now create the manager in the User table
-    user_role = db.query(UserRole).filter(UserRole.role == 'manager').first()
-    if not user_role:
-        raise HTTPException(status_code=404, detail="Manager role not found")
-    
-    # Hash the password before saving
-    hashed_password = pwd_context.hash(manager.password)
-    
-    # Create a new user associated with the manager
-    new_user = User(
-        name=manager.name,
-        email=manager.email,
-        password_hash=hashed_password,
-        role_id=user_role.id,
-        job_title=manager.job_title,
-        organization_id=organization_id,
-        manager_id=current_user_id,  # Associate the manager_id with user
-    )
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-
-    # Fetch the newly created user's ID
-    existing_employee = db.query(User).filter(User.email == manager.email).first()
-    if not existing_employee:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    # Generate form token
-    form_token = create_jwt_token({"user_id": existing_employee.id})
-    print("Generated form token:", form_token)
-
-    # Create the form link
-    form_link = f"http://activate-hrm.s3-website-ap-southeast-2.amazonaws.com/user_details-stepss/{form_token}"
-
-    # Send the email with login credentials and form link
-    send_manager_email(manager.email, manager.name, manager.password, form_link)
-
-    # Return the created manager
-    return new_manager
 
 def send_manager_email(manager_email: str, manager_name: str, password: str, form_link: str):
     """Send email with manager's login details."""
