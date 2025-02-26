@@ -347,10 +347,7 @@ def create_manager(current_user: UserDependency, manager: ManagerCreate, db: Ses
         # Return the created manager
         return new_manager
     
-    except IntegrityError as e:
-        db.rollback()  # Rollback transaction in case of IntegrityError
-        return JSONResponse(status_code=400, content={"detail": "This email is already registered. Please use another email."})
-
+    
     except Exception as e:
         db.rollback()  # Rollback transaction for any other error
         return JSONResponse(status_code=500, content={"detail": "An unexpected error occurred."})
