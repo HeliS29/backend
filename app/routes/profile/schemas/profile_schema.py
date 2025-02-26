@@ -144,6 +144,7 @@ class RegistrationReq(BaseModel):
     password: str 
     job_title: Optional[str] = None
     purpose: Optional[str] =None
+    organization_id:int
 
 class LinkRegistrationResponse(BaseModel):
     message: str

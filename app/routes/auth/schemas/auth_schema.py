@@ -16,6 +16,7 @@ class UserLogin(BaseModel):
     name:str
     password: str
     role: Optional[str]
+    organization_id:Optional[int]=None
 
 class UserResponse(BaseModel):
     id: int
@@ -47,6 +48,7 @@ class TokenResponse(BaseModel):
     user_id:Optional[int] = None
     manager_id: Optional[int] = None
     role:str
+    organization_id:Optional[int]=None
 # class TokenResponse(BaseModel):
 #     user_id: int
 #     role: str

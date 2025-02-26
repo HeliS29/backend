@@ -177,7 +177,7 @@ def get_managers(db: Session = Depends(get_db),current_user: User = Depends(get_
 
 
 @router.get("/organizations", response_model=list[OrganizationResponse])
-def get_organizations(db: Session = Depends(get_db),current_user: User = Depends(get_current_user)):
+def get_organizations(db: Session = Depends(get_db)):
     organizations = db.query(Organization).all()
     if not organizations:
         raise HTTPException(status_code=404, detail="No organizations found")
@@ -686,6 +686,8 @@ def get_organization_name(current_user:UserDependency, db: Session = Depends(get
     Get organization name based on manager's id.
     """
     manager_id=current_user['manager_id']
+    organization_id=current_user['organization_id']
+    
     # Fetch the manager from the database
     manager = db.query(Manager).filter(Manager.id == manager_id).first()
     
@@ -693,7 +695,7 @@ def get_organization_name(current_user:UserDependency, db: Session = Depends(get
         raise HTTPException(status_code=404, detail="Manager not found")
     
     # Fetch the associated organization using the organization_id from the manager
-    organization = db.query(Organization).filter(Organization.id == manager.organization_id).first()
+    organization = db.query(Organization).filter(Organization.id == organization_id).first()
     
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
@@ -737,7 +739,7 @@ def create_employee_and_send_email(
     db: Session = Depends(get_db),
 ):
     manager_id = current_manager["manager_id"]
-
+    organization_id=current_manager['organization_id']
     # Get the manager using the manager_id
     manager = db.query(Manager).filter(Manager.id == manager_id).first()
     if not manager:
@@ -745,10 +747,10 @@ def create_employee_and_send_email(
     # Check if manager exists
    
     # Check if employee already exists
-    existing_employee = db.query(User).filter(User.email == employee.email).first()
+    existing_employee = db.query(User).filter(User.email == employee.email,User.organization_id==organization_id).first()
     if existing_employee:
         # raise HTTPException(status_code=400, detail="Employee with this email already exists")
-        return JSONResponse(status_code=400, content={"message": "This email is already registered. Please use another email."})
+        return JSONResponse(status_code=400, content={"message": "Employee with this email already exists"})
 
     # Generate a unique token for the form link
     form_token = create_jwt_token({"email": employee.email})
@@ -961,33 +963,76 @@ def send_registration_email(employee_name: str, employee_email: str,form_token: 
     except Exception as e:
         print(f"Error sending email: {e}")
         return False
+# @router.post("/complete-registration", response_model=LinkRegistrationResponse)
+# def complete_registration(
+#     request: RegistrationReq,
+#     db: Session = Depends(get_db)
+# ):
+#     # Verify token
+#     payload = verify_jwt_token(request.token)
+#     print(payload)
+    
+   
+    
+#     # Get user data from the payload (assuming payload contains user_id or email)
+#     email = payload.get("email")
+#     if not email:
+#         raise HTTPException(status_code=400, detail="Invalid token payload")
+
+#     # Fetch the user by user_id (assuming the token contains the user_id)
+#     user = db.query(User).filter(User.email == email).first()
+    
+#     if not user:
+#         raise HTTPException(status_code=404, detail="User not found")
+    
+#     # Hash password and update user details
+#     hashed_password = pwd_context.hash(request.password)
+#     user.password_hash = hashed_password
+#     # user.job_title = request.job_title if request.job_title else None
+#     # user.purpose = request.purpose if request.purpose else None
+#     user.verification_code = None  # Remove token after completion
+#     user.active = True  # Mark the user as active
+#     db.commit()
+
+#     # Return the response model with a success message
+#     return LinkRegistrationResponse(message="Registration completed successfully!")
 @router.post("/complete-registration", response_model=LinkRegistrationResponse)
 def complete_registration(
     request: RegistrationReq,
     db: Session = Depends(get_db)
 ):
-    # Verify token
-    payload = verify_jwt_token(request.token)
+    # Verify token - but only for email
+    payload = verify_jwt_token(request.token)  # Now only contains email
     print(payload)
-    
-   
-    
-    # Get user data from the payload (assuming payload contains user_id or email)
+
+    # Get user data from the payload (only email)
     email = payload.get("email")
     if not email:
-        raise HTTPException(status_code=400, detail="Invalid token payload")
+        raise HTTPException(status_code=400, detail="Invalid token payload: Missing email")
 
-    # Fetch the user by user_id (assuming the token contains the user_id)
-    user = db.query(User).filter(User.email == email).first()
-    
+    # Get organization_id from the request body
+    organization_id = request.organization_id
+    if not organization_id:
+        raise HTTPException(status_code=400, detail="Missing organization_id in request body")
+
+    # Fetch the user by email and organization_id
+    user = db.query(User).filter(
+        User.email == email,
+        User.organization_id == organization_id
+    ).first()
+
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    
+
+    # Fetch the employee role ID
+    employee_role = db.query(UserRole).filter(UserRole.role == "employee").first()
+    if not employee_role:
+        raise HTTPException(status_code=500, detail="Employee role not found")  # Internal server error
+
     # Hash password and update user details
     hashed_password = pwd_context.hash(request.password)
     user.password_hash = hashed_password
-    # user.job_title = request.job_title if request.job_title else None
-    # user.purpose = request.purpose if request.purpose else None
+    user.role_id = employee_role.id  # Assign the employee role
     user.verification_code = None  # Remove token after completion
     user.active = True  # Mark the user as active
     db.commit()
