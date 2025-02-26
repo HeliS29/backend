@@ -349,7 +349,7 @@ def create_manager(current_user: UserDependency, manager: ManagerCreate, db: Ses
     
     except IntegrityError as e:
         db.rollback()  # Rollback transaction in case of IntegrityError
-        return JSONResponse(status_code=400, content={"detail": "Duplicate entry: This email is already in use."})
+        return JSONResponse(status_code=400, content={"detail": "This email is already registered. Please use another email."})
 
     except Exception as e:
         db.rollback()  # Rollback transaction for any other error
@@ -748,7 +748,7 @@ def create_employee_and_send_email(
     existing_employee = db.query(User).filter(User.email == employee.email).first()
     if existing_employee:
         # raise HTTPException(status_code=400, detail="Employee with this email already exists")
-        return JSONResponse(status_code=400, content={"message": "Employee with this email already exists"})
+        return JSONResponse(status_code=400, content={"message": "This email is already registered. Please use another email."})
 
     # Generate a unique token for the form link
     form_token = create_jwt_token({"email": employee.email})
