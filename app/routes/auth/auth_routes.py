@@ -219,7 +219,7 @@ def login(user: OAuth2Form, db: Session = Depends(get_db)):
 
 @router.post("/password-reset", response_model=dict)
 def request_password_reset(request: PasswordResetRequest, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == request.email).first()
+    user = db.query(User).filter(User.email == request.email, User.organization_id == request.organization_id ).first()
     if not user:
         raise HTTPException(status_code=404, detail="Email not registered")
 
@@ -233,7 +233,7 @@ def request_password_reset(request: PasswordResetRequest, db: Session = Depends(
 @router.post("/password-reset/confirm", response_model=dict)
 def confirm_password_reset(data: PasswordResetConfirm, db: Session = Depends(get_db)):
     # Use the email and verification code to find the user
-    user = verify_code(db, data.email, data.verification_code)
+    user = verify_code(db, data.email, data.verification_code, data.organization_id)
     print(user)  # Match email and verification code
     if not user:
         print(f"Invalid or expired verification code: {data.verification_code} for email: {data.email}")

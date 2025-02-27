@@ -62,8 +62,10 @@ class TokenResponse(BaseModel):
 
 class PasswordResetRequest(BaseModel):
     email: EmailStr
+    organization_id:int
 
 class PasswordResetConfirm(BaseModel):
     email: EmailStr
     verification_code: str
     new_password: str
+    organization_id:int

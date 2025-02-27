@@ -37,9 +37,9 @@ def create_verification_code(db: Session, user: User):
     db.refresh(user)
     return verification_code
 
-def verify_code(db: Session, email: str, verification_code: str):
+def verify_code(db: Session, email: str, verification_code: str, organization_id: int):
     """Verifies the given code for a user."""
-    user = db.query(User).filter(User.email == email).first()
+    user = db.query(User).filter(User.email == email,User.organization_id == organization_id,).first()
     if not user or not user.verification_code:
         print(f"No user found or no verification code for email: {email}")
         return None
