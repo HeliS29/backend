@@ -36,6 +36,7 @@ class User(Base):
     job_title = Column(String(50), nullable=True)
     manager_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     active = Column(Boolean, default=False)
+    encrypted_password = Column(String(500), nullable=True)
    
     # manager_id = Column(Integer, ForeignKey("users.id"), nullable=True)
 
