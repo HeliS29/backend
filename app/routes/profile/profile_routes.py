@@ -16,30 +16,23 @@ from models.profile import *
 from sqlalchemy.exc import IntegrityError
 from routes.profile.schemas.profile_schema import CurrentUserInfoResponse, EmployeeCreate,EmployeeCreateresponse,EmployeeResponseForUpdate,EmployeeResponse, LinkRegistrationResponse,ManagerResponse, NewEmployeeCreate, NewEmployeeResponse, OrganizationNameResponse,OrganizationResponse,ManagerCreate,OrganizationCreate, RegistrationReq, ResendEmail, resendEmailResponse, updateDetails
 from controller.utils.current_user import get_current_user
+from cryptography.fernet import Fernet
+
+import os
+from dotenv import load_dotenv
+
 router = APIRouter()
+load_dotenv()  # Load environment variables
+
+SECRET_KEY = os.getenv("SECRET_KEY")
+
+if not SECRET_KEY:
+    raise ValueError("SECRET_KEY is missing! Set it in the .env file.")
+
+cipher_suite = Fernet(SECRET_KEY) 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 UserDependency = Annotated[dict, Depends(get_current_user)]
-# @router.get("/employee/profile/", response_model=EmployeeResponse)
-# def get_employee_profile(current_user: UserDependency, db: Session = Depends(get_db)):
-#     print(current_user)
-#     user_id = current_user['id']
-#     employee = db.query(User).filter(User.id == user_id).first()
-#     # employee = db.query(Employee, User.name).join(User).filter(Employee.id == employee_id).first()
-#     if not employee:
-#         raise HTTPException(status_code=404, detail="Employee not found")
-#     user_name = db.query(User.name).filter(User.id == employee.id).first()
-#     if not user_name:
-#         raise HTTPException(status_code=404, detail="User not found")
 
-#     return {
-#         "user_id": employee.id,
-#         "name": user_name[0],  # Assuming user_name is a tuple (name,)
-#         "manager_id": employee.manager_id if employee.manager_id is not None else None,
-#         "job_title": employee.job_title if employee.job_title is not None else None,
-#         "organization_id": employee.organization_id if employee.organization_id is not None else None,
-#         "created_at": employee.created_at,
-#         "updated_at": employee.updated_at
-#     }
 @router.get("/employee/profile/", response_model=EmployeeResponseForUpdate)
 def get_employee_profile(current_user: UserDependency, db: Session = Depends(get_db)):
     user_id = current_user['id']
@@ -498,7 +491,7 @@ def send_email(recipient_email, subject, body):
         print(f"Email sent successfully to {recipient_email}")
     except Exception as e:
         print(f"Error sending email: {e}")
-
+ 
 @router.post("/add/organizations", response_model=OrganizationResponse)
 def create_organization_with_manager(
     current_user: UserDependency,
@@ -532,7 +525,9 @@ def create_organization_with_manager(
 
     # Hash the provided manager password
     hashed_password = pwd_context.hash(organization.manager_password)
-
+    encrypted_password = cipher_suite.encrypt(organization.manager_password.encode())
+    print(encrypted_password,"encrypted_password")
+    
     # Create a manager entry
     new_manager = Manager(
         name=organization.manager_name,
@@ -551,6 +546,7 @@ def create_organization_with_manager(
         password_hash=hashed_password,
         role_id=user_role.id,  # Assign "manager" role
         organization_id=new_organization.id,
+        encrypted_password=encrypted_password,
     )
     db.add(new_user)
     db.commit()
@@ -580,26 +576,61 @@ def create_organization_with_manager(
 
     return new_organization
 
+# @router.get("/organizations/{organization_id}")
+# def get_organization(organization_id: int, db: Session = Depends(get_db)):
+#     organization = db.query(Organization).filter(Organization.id == organization_id).first()
+#     if not organization:
+#         raise HTTPException(status_code=404, detail="Organization not found")
+
+#     # Fetch the user with role_id = 4 (Owner) for the organization
+#     owner = (
+#     db.query(User)
+#     .filter(
+#         User.organization_id == organization.id,
+#         User.role_id == 3,
+#         User.manager_id == None  # Ensure manager_id is NULL
+#     )
+#     .first()
+# )
+#     return {
+#         "organization_name": organization.name,
+#         "owner_name": owner.name if owner else "N/A",
+#         "owner_email": owner.email if owner else "N/A",
+#         "created_at": organization.created_at,
+#     }
+
+
 @router.get("/organizations/{organization_id}")
 def get_organization(organization_id: int, db: Session = Depends(get_db)):
+    # Fetch the organization
     organization = db.query(Organization).filter(Organization.id == organization_id).first()
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
-    # Fetch the user with role_id = 4 (Owner) for the organization
+    # Fetch role_id for "Manager" and "Owner" from UserRoles table
+    manager_role_id = db.query(UserRole.id).filter(UserRole.role == "Manager").scalar()
+    
+    if not manager_role_id:
+        raise HTTPException(status_code=404, detail="Required roles not found")
+
+    # Fetch the user with the owner role where manager_id is NULL
     owner = (
-    db.query(User)
-    .filter(
-        User.organization_id == organization.id,
-        User.role_id == 3,
-        User.manager_id == None  # Ensure manager_id is NULL
+        db.query(User)
+        .filter(
+            User.organization_id == organization.id,
+            User.role_id == manager_role_id,  # Dynamically fetched Owner role
+            User.manager_id == None  # Ensure manager_id is NULL
+        )
+        .first()
     )
-    .first()
-)
+    decrypted_password = cipher_suite.decrypt(owner.encrypted_password).decode()
+    print(f"Decrypted: {decrypted_password}")
+
     return {
         "organization_name": organization.name,
         "owner_name": owner.name if owner else "N/A",
         "owner_email": owner.email if owner else "N/A",
+        "owner_password": decrypted_password if owner else "N/A",  # Hashed password
         "created_at": organization.created_at,
     }
 
@@ -617,13 +648,13 @@ def update_organization(
     organization = db.query(Organization).filter(Organization.id == organization_id).first()
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
-
+    manager_role_id = db.query(UserRole.id).filter(UserRole.role == "Manager").scalar()
     # Fetch the user entry (organization owner)
     owner = (
         db.query(User)
         .filter(
             User.organization_id == organization.id,
-            User.role_id == 3,  # Assuming '2' is the role ID for Owner/Admin
+            User.role_id == manager_role_id,  # Assuming '2' is the role ID for Owner/Admin
             User.manager_id == None  
         )
         .first()
@@ -665,11 +696,14 @@ class ResetPassword(BaseModel):
 
 @router.put("/organizations/{organization_id}/reset-password")
 def reset_owner_password(organization_id: int, reset_data: ResetPassword, db: Session = Depends(get_db)):
-    owner = db.query(User).filter(User.organization_id == organization_id, User.role_id == 3,User.manager_id == None).first()
+    manager_role_id = db.query(UserRole.id).filter(UserRole.role == "Manager").scalar()
+    owner = db.query(User).filter(User.organization_id == organization_id, User.role_id == manager_role_id,User.manager_id == None).first()
     if not owner:
         raise HTTPException(status_code=404, detail="Account owner not found")
 
     owner.password_hash = pwd_context.hash(reset_data.new_password)
+    encrypted_password = cipher_suite.encrypt(reset_data.new_password.encode())
+    owner.encrypted_password = encrypted_password.decode() 
     db.commit()
     
     return {"message": "Password reset successfully"}
