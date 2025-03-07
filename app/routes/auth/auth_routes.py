@@ -12,9 +12,20 @@ from crud.auth import authenticate_user,create_verification_code,verify_code
 # from controller.utils.reset_email import send_reset_email
 from passlib.context import CryptContext
 from models.profile import Manager
+from cryptography.fernet import Fernet
+
+import os
+from dotenv import load_dotenv
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 router = APIRouter()
+load_dotenv()  # Load environment variables
 
+SECRET_KEY = os.getenv("SECRET_KEY")
+
+if not SECRET_KEY:
+    raise ValueError("SECRET_KEY is missing! Set it in the .env file.")
+
+cipher_suite = Fernet(SECRET_KEY) 
 class OAuth2FormWithDomain(OAuth2PasswordRequestForm):
     def __init__(
         self, 
@@ -241,6 +252,8 @@ def confirm_password_reset(data: PasswordResetConfirm, db: Session = Depends(get
 
     # Update password (hash the new password)
     user.password_hash = pwd_context.hash(data.new_password)
+    if hasattr(user, "encrypted_password") and user.encrypted_password is not None:
+        user.encrypted_password = cipher_suite.encrypt(data.new_password.encode())
     user.verification_code = None  # Clear the used code
     user.verification_code_expires_at = None
     db.commit()
