@@ -241,7 +241,7 @@ def request_password_reset(request: PasswordResetRequest, db: Session = Depends(
     send_verification_code(user.email, verification_code)
     return {"message": "Password reset code sent to your email"}
 
-@router.post("/password-reset/confirm", response_model=dict)
+@router.post("/password-reset/confirm", response_model=dict)    
 def confirm_password_reset(data: PasswordResetConfirm, db: Session = Depends(get_db)):
     # Use the email and verification code to find the user
     user = verify_code(db, data.email, data.verification_code, data.organization_id)
