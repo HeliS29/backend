@@ -731,15 +731,20 @@ class GenerateFormLinkResponse(BaseModel):
     registration_url: str
     message: str
     user_id: int
+    organization_id: int 
 class GenerateFormLinkRequest(BaseModel):
     email: str
+    organization_id: int
 @router.post("/generateFormLink", response_model=GenerateFormLinkResponse)
 def generate_form_link(
     request: GenerateFormLinkRequest,
     db: Session = Depends(get_db),
 ):
     # Fetch user from DB using email
-    user = db.query(User).filter(User.email == request.email).first()
+    user = db.query(User).filter(
+        User.email == request.email,
+        User.organization_id == request.organization_id
+    ).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
@@ -753,6 +758,7 @@ def generate_form_link(
     return {
         "registration_url": form_link,
         "user_id": user.id,
+        "organization_id": user.organization_id,
         "message": "Registration link generated successfully"
     }
 
