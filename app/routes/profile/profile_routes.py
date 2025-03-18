@@ -340,15 +340,15 @@ def create_manager(current_user: UserDependency, manager: ManagerCreate, db: Ses
         # Return the created manager
         return new_manager
     
-    
+smtp_server = "smtp.office365.com"
+smtp_port = 587
+EMAIL_USERNAME = "survey@activatehcg.com"  # Your Gmail address
+EMAIL_PASSWORD = "qtzFHfvuQXR7"     
     
 
 def send_manager_email(manager_email: str, manager_name: str, password: str, form_link: str):
     """Send email with manager's login details."""
-    smtp_server = "smtp.gmail.com"
-    smtp_port = 587
-    EMAIL_USERNAME = "helishah2116@gmail.com"  # Your Gmail address
-    EMAIL_PASSWORD = "lkyr uoby fjql ygka" # Your email app password or SMTP password
+     # Your email app password or SMTP password
 
     msg = MIMEMultipart()
     msg['From'] = EMAIL_USERNAME
@@ -468,11 +468,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 #     return new_organization
 # -------------------------New--------------------------------------------------
-smtp_server = "smtp.gmail.com"
-smtp_port = 587
-EMAIL_USERNAME = "helishah2116@gmail.com"  # Your Gmail address
-EMAIL_PASSWORD = "lkyr uoby fjql ygka"  # Your email password
- # Sender email
+ 
 
 def send_email(recipient_email, subject, body):
     msg = MIMEMultipart()
@@ -857,10 +853,7 @@ def create_employee_and_send_email(
     
 
     # Email configuration
-    smtp_server = "smtp.gmail.com"
-    smtp_port = 587
-    EMAIL_USERNAME = "helishah2116@gmail.com"  # Your Gmail address
-    EMAIL_PASSWORD = "lkyr uoby fjql ygka"  # Your app password
+     # Your app password
 
     # Create the email message
     msg = MIMEMultipart()
@@ -940,22 +933,7 @@ def send_registration_email(employee_name: str, employee_email: str,form_token: 
     The Role Review process was designed to improve clarity of expectations, communications, and the path to career success. Thank you for making this investment of approximately 25 minutes – a little clarity can go a LONG way when it comes to career satisfaction and employee engagement.
 
     For additional support or information, please contact info@activatehcg.com
-    """
-
-    
-    # SMTP Configuration (Example for Gmail)
-    import smtplib
-    from email.mime.text import MIMEText
-    from email.mime.multipart import MIMEMultipart
-    from email.mime.base import MIMEBase
-    from email import encoders
-    
-
-    # Email configuration
-    smtp_server = "smtp.gmail.com"
-    smtp_port = 587
-    EMAIL_USERNAME = "helishah2116@gmail.com"  # Your Gmail address
-    EMAIL_PASSWORD = "lkyr uoby fjql ygka"  # Your app password
+    """ # Your app password
 
     # Create the email message
     msg = MIMEMultipart()
