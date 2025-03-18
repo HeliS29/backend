@@ -226,20 +226,20 @@ def create_report(user_id: int = Form(...),manager_id: int = Form(...), role: st
     if existing_report:
         existing_versions_count = db.query(ReportVersion).filter(ReportVersion.report_id == existing_report.id).count()
 
-        if existing_versions_count >= 4:
-            # raise HTTPException(
-            #     status_code=400,
-            #     detail="You can only have up to 3 versions of a report. Please subscribe for additional versions."
-            # )
-            return ReportResponse(
-                id=existing_report.id,
-                user_id=existing_report.user_id,
-                manager_id=existing_report.manager_id,
-                current_version_id=existing_report.current_version_id,
-                created_at=existing_report.created_at,
-                updated_at=existing_report.updated_at,
-                detail="You can only have up to 4 versions of a report.To create additional versions,please contact the admin for assistance."
-            )
+        # if existing_versions_count >= 4:
+        #     # raise HTTPException(
+        #     #     status_code=400,
+        #     #     detail="You can only have up to 3 versions of a report. Please subscribe for additional versions."
+        #     # )
+        #     return ReportResponse(
+        #         id=existing_report.id,
+        #         user_id=existing_report.user_id,
+        #         manager_id=existing_report.manager_id,
+        #         current_version_id=existing_report.current_version_id,
+        #         created_at=existing_report.created_at,
+        #         updated_at=existing_report.updated_at,
+        #         detail="You can only have up to 4 versions of a report.To create additional versions,please contact the admin for assistance."
+        #     )
         # Increment the version number for the existing report
         last_version = (
             db.query(ReportVersion)

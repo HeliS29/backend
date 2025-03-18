@@ -1,3 +1,4 @@
+import os
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -92,10 +93,11 @@ def send_email_via_smtp(recipient_email, subject, body, attachment_url=None):
             response.raise_for_status()  # Raise an error for bad responses (4xx or 5xx)
             
             # Prepare the attachment
-            part = MIMEBase('application', 'octet-stream')
+            part = MIMEBase('application', 'pdf')
             part.set_payload(response.content)
             encoders.encode_base64(part)
-            filename = attachment_url.split("/")[-1]
+            filename = os.path.basename(attachment_url)
+            safe_filename = filename.replace(" ", "").replace("–", "-")   # Convert en-dash to hyphen
             temp_pdf_path = f"/tmp/{filename}"
             compressed_pdf_path = f"/tmp/compressed_{filename}"
             with open(temp_pdf_path, "wb") as f:
@@ -107,7 +109,7 @@ def send_email_via_smtp(recipient_email, subject, body, attachment_url=None):
                 part = MIMEBase('application', 'octet-stream')
                 part.set_payload(f.read())
                 encoders.encode_base64(part)
-                part.add_header('Content-Disposition', f'attachment; filename=compressed_{filename}')
+                part.add_header('Content-Disposition', f'attachment; filename={safe_filename}')
                 msg.attach(part)
             # part.add_header('Content-Disposition', f'attachment; filename={filename}')
             # msg.attach(part)
