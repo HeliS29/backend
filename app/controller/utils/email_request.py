@@ -13,51 +13,7 @@ def compress_pdf(input_path, output_path):
         doc.close()
     except Exception as e:
         print(f"Error compressing PDF: {e}")
-# def send_email_via_smtp(recipient_email, subject, body, attachment_path):
-#     import smtplib
-#     from email.mime.text import MIMEText
-#     from email.mime.multipart import MIMEMultipart
-#     from email.mime.base import MIMEBase
-#     from email import encoders
 
-#     # Email configuration
-#     smtp_server = "smtp.gmail.com"
-#     smtp_port = 587
-#     EMAIL_USERNAME = "helishah2116@gmail.com"  # Your Gmail address
-#     EMAIL_PASSWORD = "lkyr uoby fjql ygka"  # Your app password
-
-#     # Create the email message
-#     msg = MIMEMultipart()
-#     msg['From'] = EMAIL_USERNAME
-#     msg['To'] = recipient_email
-#     msg['Subject'] = subject
-
-#     # Attach the body
-#     msg.attach(MIMEText(body, 'plain'))
-
-#     # Attach the file if provided
-#     if attachment_path:
-#         try:
-#             with open(attachment_path, "rb") as attachment:
-#                 part = MIMEBase('application', 'octet-stream')
-#                 part.set_payload(attachment.read())
-#             encoders.encode_base64(part)
-#             part.add_header('Content-Disposition', f"attachment; filename= {attachment_path.split('/')[-1]}")
-#             msg.attach(part)
-#         except Exception as e:
-#             print(f"Error attaching file: {e}")
-
-#     # Sending the email
-#     try:
-#         with smtplib.SMTP(smtp_server, smtp_port) as server:
-#             server.starttls()
-#             server.login(EMAIL_USERNAME, EMAIL_PASSWORD)  # Correct username and password
-#             server.send_message(msg)
-#         print(f"Email sent successfully to {recipient_email}")
-#         return True
-#     except Exception as e:
-#         print(f"Error sending email: {e}")
-#         return False
 import requests # type: ignore
 def send_email_via_smtp(recipient_email, subject, body, attachment_url=None):
     import smtplib
@@ -68,12 +24,12 @@ def send_email_via_smtp(recipient_email, subject, body, attachment_url=None):
     
 
     # Email configuration
-    smtp_server = "smtp.gmail.com"
-    smtp_port = 587
-    EMAIL_USERNAME = "helishah2116@gmail.com"  # Your Gmail address
-    EMAIL_PASSWORD = "lkyr uoby fjql ygka"  # Your app password
+    # # Your app password
     
-
+    smtp_server = "smtp.office365.com"
+    smtp_port = 587
+    EMAIL_USERNAME = "survey@activatehcg.com"  # Your Gmail address
+    EMAIL_PASSWORD = "qtzFHfvuQXR7" 
     # Create the email message
     msg = MIMEMultipart()
     msg['From'] = EMAIL_USERNAME
@@ -127,6 +83,47 @@ def send_email_via_smtp(recipient_email, subject, body, attachment_url=None):
     except Exception as e:
         print(f"Error sending email: {e}")
         return False
+    
+# def send_email_via_smtp(recipient_email, subject, body, attachment_path):
+#     import smtplib
+#     from email.mime.text import MIMEText
+#     from email.mime.multipart import MIMEMultipart
+#     from email.mime.base import MIMEBase
+#     from email import encoders
+
+#     # Create the email message
+#     msg = MIMEMultipart()
+#     msg['From'] = EMAIL_USERNAME
+#     msg['To'] = recipient_email
+#     msg['Subject'] = subject
+
+#     # Attach the body
+#     msg.attach(MIMEText(body, 'plain'))
+
+#     # Attach the file if provided
+#     if attachment_path:
+#         try:
+#             with open(attachment_path, "rb") as attachment:
+#                 part = MIMEBase('application', 'octet-stream')
+#                 part.set_payload(attachment.read())
+#             encoders.encode_base64(part)
+#             part.add_header('Content-Disposition', f"attachment; filename= {attachment_path.split('/')[-1]}")
+#             msg.attach(part)
+#         except Exception as e:
+#             print(f"Error attaching file: {e}")
+
+#     # Sending the email
+#     try:
+#         with smtplib.SMTP(smtp_server, smtp_port) as server:
+#             server.starttls()
+#             server.login(EMAIL_USERNAME, EMAIL_PASSWORD)  # Correct username and password
+#             server.send_message(msg)
+#         print(f"Email sent successfully to {recipient_email}")
+#         return True
+#     except Exception as e:
+#         print(f"Error sending email: {e}")
+#         return False
+
 
 # def send_email_via_smtp(recipient_email, subject, body):
 #     SMTP_SERVER = "smtp.gmail.com"
